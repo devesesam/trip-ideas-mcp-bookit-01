@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------- TripIdeas brand-token defaults ----------
+   These match TRIPIDEAS_THEME in src/theme.ts; theme.ts re-applies them at
+   runtime so the host page can override before mount if needed.
+   Sourced 2026-04-27 from tripideas.nz screenshots + their Tailwind CSS dump. */
+:root {
+  --ti-primary: 0 0 0;             /* #000000 */
+  --ti-primary-hover: 38 38 38;    /* #262626 */
+  --ti-accent: 175 222 255;        /* #afdeff — sky blue from the homepage map widget */
+  --ti-link: 37 99 235;            /* #2563eb — body-link blue (Blenheim page links) */
+  --ti-surface: 255 255 255;
+  --ti-surface-alt: 250 250 250;   /* #fafafa */
+  --ti-text: 0 0 0;
+  --ti-text-muted: 115 115 115;    /* #737373 */
+  --ti-border: 205 205 205;        /* #cdcdcd — TripIdeas Tailwind border default */
+  --ti-font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --ti-font-heading: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --ti-radius-widget: 0.5rem;
+  --ti-radius-bubble: 0.625rem;
+}
+
+/* ---------- Markdown-rendered assistant messages ---------- */
+.ti-prose {
+  line-height: 1.55;
+}
+.ti-prose p {
+  margin: 0 0 0.6em;
+}
+.ti-prose p:last-child {
+  margin-bottom: 0;
+}
+.ti-prose strong {
+  font-weight: 600;
+}
+.ti-prose em {
+  font-style: italic;
+}
+.ti-prose code {
+  background: rgb(var(--ti-surface-alt));
+  padding: 0.1em 0.35em;
+  border-radius: 0.25em;
+  font-size: 0.9em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.ti-prose ul,
+.ti-prose ol {
+  margin: 0.5em 0 0.6em;
+  padding-left: 1.4em;
+}
+.ti-prose ul {
+  list-style: disc;
+}
+.ti-prose ol {
+  list-style: decimal;
+}
+.ti-prose li {
+  margin: 0.15em 0;
+}
+.ti-prose li > p {
+  margin: 0;
+}
+.ti-prose h1,
+.ti-prose h2,
+.ti-prose h3 {
+  font-family: var(--ti-font-heading);
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 1em 0 0.4em;
+}
+.ti-prose h1 {
+  font-size: 1.25em;
+}
+.ti-prose h2 {
+  font-size: 1.1em;
+}
+.ti-prose h3 {
+  font-size: 1em;
+}
+.ti-prose a {
+  color: rgb(var(--ti-link));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ti-prose a:hover {
+  text-decoration-thickness: 2px;
+}
+.ti-prose hr {
+  border: 0;
+  border-top: 1px solid rgb(var(--ti-border));
+  margin: 1em 0;
+}
+.ti-prose table {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  font-size: 0.9em;
+}
+.ti-prose th,
+.ti-prose td {
+  border: 1px solid rgb(var(--ti-border));
+  padding: 0.35em 0.55em;
+  text-align: left;
+}
+.ti-prose blockquote {
+  border-left: 3px solid rgb(var(--ti-border));
+  padding-left: 0.8em;
+  color: rgb(var(--ti-text-muted));
+  margin: 0.6em 0;
+}
+
+/* Hide scrollbar visually but keep scroll behaviour for the message list */
+.ti-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--ti-border)) transparent;
+}
+.ti-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.ti-scroll::-webkit-scrollbar-thumb {
+  background: rgb(var(--ti-border));
+  border-radius: 3px;
+}

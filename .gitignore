@@ -1,0 +1,48 @@
+# Secrets — NEVER commit
+.env
+.env.*
+!.env.example
+*.pem
+credentials.json
+token.json
+
+# Local intermediates
+.tmp/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+.parcel-cache/
+.next/
+.netlify/
+
+# Modal local cache
+.modal/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Project-specific outputs that get regenerated
+.tmp/regions_cache.json
+.tmp/golden_doc_candidates.json
+.tmp/truncated_aimetadata_docs.csv
+.tmp/raw_paragraphs.json

@@ -1,0 +1,33 @@
+# Netlify build config for the Tripideas chat widget.
+# Auto-deploys from GitHub on every push to main (already wired by user).
+#
+# Repo is a monorepo: backend/ stays untouched here, only the frontend/ build
+# is published.
+
+[build]
+  base = "frontend/"
+  command = "npm install && npm run build"
+  publish = "frontend/dist/"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--include=dev"
+
+# Health checks / quality-of-life
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Long cache for hashed assets emitted by Vite
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# SPA fallback so deep links (currently just `/`) always resolve
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

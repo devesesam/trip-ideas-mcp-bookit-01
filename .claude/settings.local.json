@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import requests, dotenv; print\\('requests', requests.__version__\\); print\\('dotenv ok'\\)\")",
+      "Bash(python execution/inspect_corpus.py)",
+      "Bash(python execution/inspect_aimetadata.py)",
+      "Bash(python -c ' *)",
+      "Bash(python execution/audit/aimetadata_quality.py)",
+      "Bash(python execution/registry/regions.py)",
+      "Bash(python execution/audit/truncated_aimetadata_report.py)",
+      "Bash(python execution/normalize/tag_mapping.py)",
+      "Bash(python execution/normalize/select_golden_candidates.py)",
+      "Bash(python execution/normalize/demo_deterministic_prepass.py)",
+      "Bash(python execution/aimetadata/tests/exercise_parser.py)",
+      "Bash(python execution/tools/search_places.py)",
+      "Bash(python execution/registry/settlements.py)",
+      "Bash(python execution/tools/build_day_itinerary.py)",
+      "Bash(python execution/tools/get_place_summary.py)",
+      "Bash(python execution/tools/mock_chat_walkthrough.py)",
+      "Bash(python execution/tools/refine_itinerary.py)",
+      "Bash(python execution/tools/build_trip_itinerary.py)",
+      "WebFetch(domain:tripideas.nz)",
+      "Bash(pip install *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(tasklist)",
+      "Bash(taskkill /PID 25100 /F)",
+      "Bash(taskkill /PID 25272 /F)",
+      "Bash(taskkill //PID 25100 //F)",
+      "Bash(taskkill //PID 25272 //F)",
+      "Bash(uvicorn orchestrator:create_app --factory --port 8000)",
+      "Bash(curl -s http://localhost:8000/)",
+      "Bash(pip show *)",
+      "Bash(modal --version)"
+    ]
+  }
+}
