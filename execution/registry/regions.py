@@ -85,6 +85,42 @@ SUBREGION_ISLAND_OVERRIDE: dict[str, str] = {
 }
 
 
+# Approximate centroids for each NZ region — used by tools that need a
+# coords-based "where is this region?" answer when the source data isn't
+# tagged with our region taxonomy (e.g., accommodation docs only have `town`).
+# Values are picked to favour the most tourist-central point per region.
+REGION_CENTROIDS: dict[str, tuple[float, float]] = {
+    "Northland": (-35.50, 174.00),
+    "Auckland": (-36.85, 174.75),
+    "Coromandel": (-36.95, 175.65),
+    "Waikato": (-37.78, 175.28),                   # Hamilton
+    "Bay of Plenty": (-37.69, 176.17),             # Tauranga
+    "East Cape": (-38.66, 177.98),                 # Gisborne
+    "Hawke Bay": (-39.49, 176.91),                 # Napier
+    "Taranaki": (-39.07, 174.08),                  # New Plymouth
+    "Manawatū-Whanganui": (-40.36, 175.61),        # Palmerston North
+    "Wellington": (-41.29, 174.78),
+    "Nelson Tasman": (-41.27, 173.28),             # Nelson
+    "Golden Bay": (-40.85, 172.81),                # Tākaka
+    "Marlborough": (-41.51, 173.96),               # Blenheim
+    "West Coast": (-42.45, 171.21),                # Greymouth
+    "Canterbury": (-43.53, 172.64),                # Christchurch
+    "Otago": (-45.03, 168.66),                     # Queenstown (more touristy than Dunedin)
+    "Southland": (-46.41, 168.35),                 # Invercargill
+}
+
+
+def region_centroid(region_name: str) -> Optional[tuple[float, float]]:
+    """Return (lat, lng) for a NZ region. Case-insensitive. None if unknown."""
+    if region_name in REGION_CENTROIDS:
+        return REGION_CENTROIDS[region_name]
+    target = _normalize(region_name)
+    for k, v in REGION_CENTROIDS.items():
+        if _normalize(k) == target:
+            return v
+    return None
+
+
 @dataclass
 class Region:
     id: str

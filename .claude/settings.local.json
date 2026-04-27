@@ -41,7 +41,9 @@
       "Bash(netstat -ano)",
       "Bash(taskkill //PID 12756 //F)",
       "Bash(taskkill //PID 12816 //F)",
-      "Bash(taskkill //PID 26768 //F)"
+      "Bash(taskkill //PID 26768 //F)",
+      "Bash(python execution/tools/search_accommodation.py)",
+      "Bash(curl -s -X POST https://devesesam--tripideas-chat-web.modal.run/chat -H \"Content-Type: application/json\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"Where can I stay in Queenstown? Just give me 3 well-reviewed options.\"}]}')"
     ]
   }
 }

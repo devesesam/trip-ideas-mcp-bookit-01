@@ -324,6 +324,19 @@ function describeToolCall(tc: ToolCall): string {
       }
       return "Refining the plan";
     }
+    case "search_accommodation": {
+      const town = strArg(args.town);
+      const region = strArg(args.region);
+      const types = arrArg(args.accommodation_types);
+      const goldOnly = args.gold_medal_only === true;
+      const where = town || region;
+      const typeBit = types.length ? ` ${(types as string[]).slice(0, 2).join("/")}` : "";
+      const goldBit = goldOnly ? " Gold Medal" : "";
+      if (where) {
+        return `Finding${goldBit}${typeBit} accommodation in ${where}`;
+      }
+      return `Finding${goldBit}${typeBit} accommodation`;
+    }
     default:
       return tc.name;
   }

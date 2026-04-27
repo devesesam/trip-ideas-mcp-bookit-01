@@ -312,6 +312,10 @@ def _summarize_tool_result(name: str, result: dict) -> str:
         return f"{name} → error: {result.get('error_code', 'unknown')}: {result.get('message', '')[:80]}"
     if name == "search_places":
         return f"search_places → {result.get('count', 0)} matches"
+    if name == "search_accommodation":
+        facets = result.get("facets") or {}
+        bookable = facets.get("bookable_count", 0)
+        return f"search_accommodation → {result.get('count', 0)} matches, {bookable} bookable now"
     if name == "get_place_summary":
         return f"get_place_summary → {result.get('title', '?')!r}"
     if name == "build_day_itinerary":

@@ -33,6 +33,11 @@ from tools.build_trip_itinerary import (  # noqa: E402
 )
 from tools.get_place_summary import get_place_summary  # noqa: E402
 from tools.refine_itinerary import RefineInput, refine_itinerary  # noqa: E402
+from tools.search_accommodation import (  # noqa: E402
+    NearFilter as AccomNearFilter,
+    SearchAccommodationInput,
+    search_accommodation,
+)
 from tools.search_places import (  # noqa: E402
     NearFilter, SearchPlacesInput, search_places,
 )
@@ -64,6 +69,15 @@ _CHANGE_TYPES = [
     "replace_slot", "remove_slot", "add_slot",
     "change_pace", "change_timing", "change_themes",
     "change_intensity", "change_budget", "broad_adjustment",
+]
+_ACCOMMODATION_TYPES = [
+    "Budget/Backpackers",
+    "Cabins/Cottages/Units/Houses",
+    "Caravan Parks & Camping",
+    "Chalets/Villas/Cottages",
+    "Lodge",
+    "Motel",
+    "Studio/Apartments",
 ]
 
 
@@ -299,12 +313,106 @@ REFINE_ITINERARY_SCHEMA = {
 }
 
 
+SEARCH_ACCOMMODATION_SCHEMA = {
+    "name": "search_accommodation",
+    "description": (
+        "Find Tripideas accommodation listings (places to stay). Use this for "
+        "lodging questions — *where to stay*, *find me a holiday park near X*, "
+        "*Gold Medal places in Canterbury*, etc. NOT for sights or activities "
+        "(use search_places for those). Each result includes a `book_link` to "
+        "tripideas.nz/<slug> for the booking flow."
+        "\n\n"
+        "Important data note: the indexed accommodation pool is heavily "
+        "skewed to 'Caravan Parks & Camping' (~94%) — only a handful of "
+        "Motels (3), Backpackers (6), and 1 Lodge in the whole country. If a "
+        "specific type filter returns 0 results, consider re-running without "
+        "the type filter and surfacing what's actually there."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "region": {
+                "type": "string",
+                "description": "NZ region (e.g. 'Otago', 'Canterbury'). Resolved internally to a coordinate centroid + 80km radius — accommodation docs aren't tagged with our region taxonomy.",
+            },
+            "subRegion": {
+                "type": "string",
+                "description": "Optional. SubRegion name; resolved via page-coordinate means.",
+            },
+            "town": {
+                "type": "string",
+                "description": "Filter by the `town` field on the doc (e.g. 'Queenstown', 'Picton'). Substring match.",
+            },
+            "near": {
+                "type": "object",
+                "properties": {
+                    "lat": {"type": "number"},
+                    "lng": {"type": "number"},
+                    "radius_km": {"type": "number", "default": 30.0},
+                },
+                "required": ["lat", "lng"],
+                "description": "Optional explicit lat/lng anchor. Overrides region/subRegion resolution.",
+            },
+            "region_radius_km": {
+                "type": "number",
+                "default": 80.0,
+                "description": "Radius applied when region/subRegion was resolved to a centroid.",
+            },
+            "accommodation_types": {
+                "type": "array",
+                "items": {"type": "string", "enum": _ACCOMMODATION_TYPES},
+                "description": "Filter by accommodationType1 enum values (any-match).",
+            },
+            "min_review_rating": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 5,
+                "description": "e.g. 4.0 — exclude properties below this average review rating.",
+            },
+            "min_review_count": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Exclude lightly-reviewed properties (only meaningful with min_review_rating).",
+            },
+            "star_rating_min": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5,
+                "description": "Exclude properties below this official star rating. ~41% of docs are unrated; this filter excludes them too.",
+            },
+            "bookable_only": {
+                "type": "boolean",
+                "default": False,
+                "description": "If true, only show properties where bookNowFlag is true (immediately bookable via Tripideas).",
+            },
+            "hot_deals_only": {
+                "type": "boolean",
+                "default": False,
+                "description": "If true, only show properties currently marked as a hot deal.",
+            },
+            "gold_medal_only": {
+                "type": "boolean",
+                "default": False,
+                "description": "If true, only Gold Medal properties (today's flag).",
+            },
+            "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 30,
+                "default": 10,
+            },
+        },
+    },
+}
+
+
 TOOLS = [
     SEARCH_PLACES_SCHEMA,
     GET_PLACE_SUMMARY_SCHEMA,
     BUILD_DAY_ITINERARY_SCHEMA,
     BUILD_TRIP_ITINERARY_SCHEMA,
     REFINE_ITINERARY_SCHEMA,
+    SEARCH_ACCOMMODATION_SCHEMA,
 ]
 
 
@@ -336,6 +444,9 @@ def dispatch_tool(name: str, args: dict, client: SanityClient | None = None) -> 
         elif name == "refine_itinerary":
             inp = _make_refine_input(args)
             out = refine_itinerary(inp, client=client)
+        elif name == "search_accommodation":
+            inp = _make_search_accommodation_input(args)
+            out = search_accommodation(inp, client=client)
         else:
             return {"ok": False, "error_code": "UNKNOWN_TOOL",
                     "message": f"No tool named {name!r}"}
@@ -468,6 +579,37 @@ def _make_refine_input(args: dict) -> RefineInput:
         preserve_doc_ids=args.get("preserve_doc_ids", []) or [],
         reject_doc_ids=args.get("reject_doc_ids", []) or [],
         change_request_text=args.get("change_request_text"),
+    )
+
+
+def _make_search_accommodation_input(args: dict) -> SearchAccommodationInput:
+    near = None
+    if args.get("near"):
+        near = AccomNearFilter(
+            lat=float(args["near"]["lat"]),
+            lng=float(args["near"]["lng"]),
+            radius_km=float(args["near"].get("radius_km", 30.0)),
+        )
+    return SearchAccommodationInput(
+        region=args.get("region"),
+        subRegion=args.get("subRegion"),
+        town=args.get("town"),
+        near=near,
+        region_radius_km=float(args.get("region_radius_km", 80.0)),
+        accommodation_types=args.get("accommodation_types", []) or [],
+        min_review_rating=(
+            float(args["min_review_rating"]) if args.get("min_review_rating") is not None else None
+        ),
+        min_review_count=(
+            int(args["min_review_count"]) if args.get("min_review_count") is not None else None
+        ),
+        star_rating_min=(
+            int(args["star_rating_min"]) if args.get("star_rating_min") is not None else None
+        ),
+        bookable_only=bool(args.get("bookable_only", False)),
+        hot_deals_only=bool(args.get("hot_deals_only", False)),
+        gold_medal_only=bool(args.get("gold_medal_only", False)),
+        limit=int(args.get("limit", 10)),
     )
 
 
