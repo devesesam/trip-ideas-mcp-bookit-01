@@ -31,7 +31,17 @@
       "Bash(uvicorn orchestrator:create_app --factory --port 8000)",
       "Bash(curl -s http://localhost:8000/)",
       "Bash(pip show *)",
-      "Bash(modal --version)"
+      "Bash(modal --version)",
+      "Bash(modal token *)",
+      "Bash(modal secret *)",
+      "Bash(modal deploy *)",
+      "Bash(PYTHONIOENCODING=utf-8 PYTHONUTF8=1 modal deploy backend/modal_app.py)",
+      "Bash(curl -s https://devesesam--tripideas-chat-web.modal.run/)",
+      "Bash(curl -s -X POST https://devesesam--tripideas-chat-web.modal.run/chat -H \"Content-Type: application/json\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"What walks are good near Wellington? Just a quick list.\"}]}')",
+      "Bash(netstat -ano)",
+      "Bash(taskkill //PID 12756 //F)",
+      "Bash(taskkill //PID 12816 //F)",
+      "Bash(taskkill //PID 26768 //F)"
     ]
   }
 }
