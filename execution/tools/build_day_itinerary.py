@@ -35,6 +35,7 @@ if str(_PKG_ROOT) not in sys.path:
 from aimetadata import parse  # noqa: E402
 from registry import regions, settlements  # noqa: E402
 from sanity_client import SanityClient  # noqa: E402
+from services import google_maps  # noqa: E402
 from tools.search_places import (  # noqa: E402
     NearFilter, SearchPlaceResult, SearchPlacesInput, search_places,
 )
@@ -152,6 +153,10 @@ class DayPlan:
     end_time: str
     pace: str
     slots: list[Slot]
+    # GeoJSON FeatureCollection for the day's route — Point features for each
+    # place + a LineString feature for the road-following polyline (when
+    # Google Maps was reachable). Empty FeatureCollection if no places fit.
+    route_geojson: dict = field(default_factory=lambda: {"type": "FeatureCollection", "features": []})
 
 
 @dataclass
@@ -369,6 +374,7 @@ def build_day_itinerary(
         end_time=inp.end_time,
         pace=inp.pace,
         slots=slots,
+        route_geojson=_build_route_geojson(base_coords, slots),
     )
     return BuildDayOutput(
         ok=True,
@@ -427,9 +433,111 @@ def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 
 
 def _drive_minutes(from_coords: dict, to_coords: dict) -> float:
+    """Minutes between two coords. Always haversine × 1.4 / 60 km/h.
+
+    NOTE: We deliberately don't call Google Maps here even though we have the
+    key. Greedy fill calls this 30+ times per day (once per candidate in
+    `_pick_best_candidate`). At ~$0.005 per Directions call that'd add ~$0.15
+    per day plan just for picking, with no real quality gain — the greedy
+    algorithm just needs a "close enough" relative ranking. Google Maps gets
+    invoked exactly ONCE per day in `_build_route_geojson` (and once per
+    inter-day transition in build_trip_itinerary) for the visual polyline.
+    """
     km = _haversine_km(from_coords["lat"], from_coords["lng"],
                        to_coords["lat"], to_coords["lng"]) * WINDING_FACTOR
     return (km / DEFAULT_DRIVE_KMH) * 60.0
+
+
+def _build_route_geojson(base_coords: dict, slots: list[Slot]) -> dict:
+    """Build a GeoJSON FeatureCollection for the day's route.
+
+    Cost model: makes AT MOST ONE Google Maps Directions call for the whole
+    day (origin = destination = base, waypoints = ordered place stops). Falls
+    back to straight-line LineStrings if Google isn't configured or the call
+    fails.
+
+    Output features:
+    - Point for the base (role="base")
+    - Point per place slot (role="place")
+    - Single LineString for the full route polyline (role="drive_route") —
+      either Google's road-following overview, or a straight-line through
+      the stops as fallback. Frontend renders this as one continuous path.
+
+    GeoJSON coordinate order: [lng, lat]. Easy to flip; Google returns
+    (lat, lng) so we flip on the way out.
+    """
+    features: list[dict] = []
+
+    if base_coords and base_coords.get("lat") is not None:
+        features.append({
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [base_coords["lng"], base_coords["lat"]]},
+            "properties": {"role": "base", "label": "Start / End"},
+        })
+
+    place_slots = [s for s in slots if s.slot_type == "place" and s.place and s.place.coords]
+
+    for s in place_slots:
+        features.append({
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [s.place.coords["lng"], s.place.coords["lat"]],
+            },
+            "properties": {
+                "role": "place",
+                "slot_index": s.slot_index,
+                "title": s.place.title,
+                "subtype": s.place.place_subtype,
+                "settlement": s.place.location_settlement,
+                "start_time": s.start_time,
+                "end_time": s.end_time,
+                "themes": s.place.themes,
+            },
+        })
+
+    # Single LineString covering the whole loop (base → places → base)
+    line_coords = _route_polyline(base_coords, [s.place.coords for s in place_slots])
+    if line_coords:
+        features.append({
+            "type": "Feature",
+            "geometry": {"type": "LineString", "coordinates": line_coords},
+            "properties": {
+                "role": "drive_route",
+                "stop_count": len(place_slots),
+                "polyline_source": "google_directions" if google_maps.is_configured() else "straight_line",
+            },
+        })
+
+    return {"type": "FeatureCollection", "features": features}
+
+
+def _route_polyline(base_coords: dict, place_coords: list[dict]) -> list[list[float]]:
+    """Get the full day's route polyline as [[lng,lat], ...] (GeoJSON order).
+
+    Single call to Google Maps with the day's stops as waypoints; returns the
+    overview polyline. Falls back to straight lines through the points when
+    Google isn't available.
+    """
+    if not base_coords or base_coords.get("lat") is None:
+        return []
+    valid_places = [p for p in place_coords if p and p.get("lat") is not None]
+    if not valid_places:
+        return []
+
+    # Try Google first
+    if google_maps.is_configured():
+        result = google_maps.directions(
+            origin=(base_coords["lat"], base_coords["lng"]),
+            destination=(base_coords["lat"], base_coords["lng"]),
+            waypoints=[(p["lat"], p["lng"]) for p in valid_places],
+        )
+        if result and result.overview_polyline_points:
+            return [[lng, lat] for (lat, lng) in result.overview_polyline_points]
+
+    # Fallback: straight-line chain through all the stops
+    chain = [base_coords] + valid_places + [base_coords]
+    return [[c["lng"], c["lat"]] for c in chain]
 
 
 def _pick_best_candidate(

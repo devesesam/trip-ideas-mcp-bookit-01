@@ -5,6 +5,7 @@
 *.pem
 credentials.json
 token.json
+GOOGLE_MAPS_HANDOVER.md
 
 # Local intermediates
 .tmp/

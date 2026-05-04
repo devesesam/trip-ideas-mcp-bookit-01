@@ -16,15 +16,16 @@ Backend orchestrator (FastAPI + Anthropic SDK + 5 tools)
 Sanity (production dataset)
 ```
 
-Five planning tools, all deterministic Python:
+Six planning tools, all deterministic Python:
 
 | Tool | Purpose |
 |---|---|
-| `search_places` | Find places in a NZ region matching optional filters |
+| `search_places` | Find sights/activities/walks in a region matching optional filters |
 | `get_place_summary` | Full detail on one place |
 | `build_day_itinerary` | One-day plan from a base location + filters |
 | `build_trip_itinerary` | Multi-day chain with cross-day variety |
 | `refine_itinerary` | Adjust an existing day plan |
+| `search_accommodation` | Find places to stay (lodging) — surfaces existing Bookit-synced Sanity data |
 
 ## Repo layout
 
@@ -125,10 +126,25 @@ The orchestrator should handle these end-to-end:
 - *"Swap day two for something cheaper and easier"*
 - *"Make this itinerary more relaxed and remove long drives"*
 - *"4-day road trip from Nelson to Christchurch"*
+- *"Where can I stay in Queenstown?"*
+- *"Find me a Gold Medal place near Christchurch"*
+- *"Cheap backpackers in Auckland"*
 
 ## Background
 
 - Build plan: `~/.claude/plans/hey-this-is-a-wobbly-squirrel.md`
 - Source brief from Douglas: `directives/tripideas_mcp_brief.md`
-- Live corpus audit (2026-04-27): `directives/corpus_audit_2026-04-27.md`
+- Live corpus audit, page content (2026-04-27): `directives/corpus_audit_2026-04-27.md`
+- Live corpus audit, accommodation (2026-04-27): `directives/accommodation_audit_2026-04-27.md`
 - Tag vocabulary: `directives/tag_vocabulary.md`
+- Chat architecture decisions: `directives/chat_architecture.md`
+- Tool contracts: `directives/tool_contracts/` (e.g. `search_accommodation.md`)
+- Issues + fixes running log: `directives/issues_and_fixes_log.md`
+
+### Windows operator note (Modal CLI)
+
+When deploying from a Windows shell, prefix Modal commands with UTF-8 forcing:
+```bash
+PYTHONIOENCODING=utf-8 PYTHONUTF8=1 modal deploy backend/modal_app.py
+```
+Without this, Modal's progress-bar Unicode characters crash the cp1252 default console. See `directives/issues_and_fixes_log.md` for the full diagnosis.

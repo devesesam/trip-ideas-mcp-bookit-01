@@ -27,19 +27,23 @@ image = (
     .add_local_dir(str(PROJECT_ROOT / "backend"), remote_path="/root/backend")
 )
 
-# --- Secret: ANTHROPIC_API_KEY + SANITY_* live here ---
-# User creates this once via:
-#   modal secret create tripideas-secrets ANTHROPIC_API_KEY=sk-ant-... \
-#     SANITY_PROJECT_ID=n1o990un SANITY_DATASET=production \
-#     SANITY_API_VERSION=v2025-02-19 SANITY_TOKEN=...
-secret = modal.Secret.from_name("tripideas-secrets")
+# --- Secrets ---
+# `tripideas-secrets`  — ANTHROPIC_API_KEY + SANITY_*
+# `google-maps-secret` — GOOGLE_MAPS_API_KEY (used by execution/services/google_maps.py)
+#
+# Both created via the Modal CLI / web UI. Listing them on the function
+# decorator injects all keys as env vars in the container.
+SECRETS = [
+    modal.Secret.from_name("tripideas-secrets"),
+    modal.Secret.from_name("google-maps-secret"),
+]
 
-app = modal.App("tripideas-chat", image=image, secrets=[secret])
+app = modal.App("tripideas-chat", image=image, secrets=SECRETS)
 
 
 @app.function(
     image=image,
-    secrets=[secret],
+    secrets=SECRETS,
     min_containers=0,                 # scale to zero when idle
     max_containers=5,                 # cap at 5 concurrent containers (tune later)
     timeout=120,                      # per-request timeout

@@ -1,13 +1,19 @@
 # Chat architecture — design rationale
 
 > **What this is:** The "why" behind how the chat orchestrator + tool-routing works. Future agents (and humans) reading the codebase should consult this before proposing changes to the chat flow.
-> **Captured:** 2026-04-27 evening, after first user testing of the running stack.
+> **Captured:** 2026-04-27 evening, after first user testing of the running stack. **Updated 2026-04-27 (later evening)** for `search_accommodation` (sixth tool).
 
 ---
 
 ## Top-line
 
-Tool routing **happens inside Anthropic's Sonnet 4.6 model** via the standard Anthropic tool-use loop. There is **no separate router layer** (no Haiku pre-router, no deterministic Python intent classifier, no semantic vector match). The model sees the system prompt's tool-use guidance + the JSON schemas of all 5 tools + the conversation, and picks (a) whether to call a tool, (b) which one, (c) what arguments to pass.
+Tool routing **happens inside Anthropic's Sonnet 4.6 model** via the standard Anthropic tool-use loop. There is **no separate router layer** (no Haiku pre-router, no deterministic Python intent classifier, no semantic vector match). The model sees the system prompt's tool-use guidance + the JSON schemas of all **6 tools** + the conversation, and picks (a) whether to call a tool, (b) which one, (c) what arguments to pass.
+
+The 6 tools, by category:
+
+- **Discovery** — `search_places` (sights/walks/activities), `search_accommodation` (lodging), `get_place_summary` (one-doc detail)
+- **Composition** — `build_day_itinerary` (single day), `build_trip_itinerary` (chained multi-day)
+- **Mutation** — `refine_itinerary` (adjust existing day plan)
 
 This was a deliberate choice. Read on for why.
 
@@ -156,3 +162,60 @@ Trigger to add a router or change the architecture:
 - **Tool selection accuracy < 90%** observed across user conversations — add a deterministic fast-path for the common patterns
 
 None of these are met today. Status quo wins.
+
+---
+
+## Per-tool reference
+
+Each tool has its own contract doc under `directives/tool_contracts/`. As of 2026-04-27 only `search_accommodation.md` is fully written; the other five tools are documented inline in their `__main__` smoke tests + the build plan + this file. As tools evolve or get extended, write a tool-contract doc per the `search_accommodation.md` template:
+
+- What it does + when to call it (vs alternatives)
+- Input schema + output shape
+- Data caveats / quirks
+- Sample tool calls with verified results
+- How to extend (adding filters, scoring rules)
+- Future improvements
+
+| Tool | Contract doc | Status |
+|---|---|---|
+| `search_places` | (inline in tool file) | Verified working |
+| `get_place_summary` | (inline in tool file) | Verified working |
+| `build_day_itinerary` | (inline in tool file) | Verified working |
+| `build_trip_itinerary` | (inline in tool file) | Verified working |
+| `refine_itinerary` | (inline in tool file) | Verified working |
+| `search_accommodation` | [`tool_contracts/search_accommodation.md`](tool_contracts/search_accommodation.md) | Verified working — see contract for important data caveats |
+
+---
+
+## Google Maps integration (Sprint 4.7, 2026-05-05)
+
+**Why:** Two needs the haversine fudge couldn't satisfy:
+1. Honest drive estimates surfaced to the user (`135 km, ~2h 5m` matters when planning tight days).
+2. A road-following polyline so the frontend can render the day's actual route, not a straight line through the bush.
+
+**Wrapper:** [`execution/services/google_maps.py`](../execution/services/google_maps.py) — `is_configured()`, `geocode()` (LRU-cached), `directions()`, `decode_polyline()`. Defensive: every function returns `None` on missing key / API error / non-OK status. Caller falls back to haversine; nothing crashes.
+
+**Where it's called (cost-controlled):**
+
+| Location | Calls per invocation | Why limited |
+|---|---|---|
+| `build_day_itinerary` `_build_route_geojson` | **1** per day plan | Origin/destination = base, all places as waypoints — one call returns the whole day's polyline + accurate total drive time |
+| `build_trip_itinerary` `_compute_transition` | **1** per inter-day transition | N-1 calls for an N-day trip |
+| `build_day_itinerary` `_drive_minutes` | **0** | Reverted to haversine. Greedy fill scores ~150 candidate-vs-stop pairs per day; Google calls there would cost ~$0.75/day with no quality win for a relative ranking signal |
+
+Cost model: 4-day trip = 4 day-routes + 3 transitions = ~7 Google calls = ~$0.035. Acceptable.
+
+**GeoJSON contract:** Both itinerary tools now return a `route_geojson` field — a [GeoJSON FeatureCollection](https://datatracker.ietf.org/doc/html/rfc7946) with [lng, lat] coordinate order throughout. Features:
+
+| `properties.role` | Geometry | Source |
+|---|---|---|
+| `base` | Point | Day's base coordinates |
+| `place` | Point | Each chosen place's coords; properties carry title, themes, settlement, start/end times |
+| `drive_route` | LineString | Per-day road polyline; `properties.polyline_source` is `google_directions` or `straight_line` (fallback) |
+| `inter_day_drive` | LineString | Inter-day road polyline (trip tool only); `properties.polyline_source` and the from/to day_index + settlements |
+
+The trip-level `route_geojson` is the union of every day's per-day features (each tagged with `day_index`) plus the inter-day `LineString`s. Frontend can render this as one map.
+
+**Health diagnostic:** `GET /` on the deployed orchestrator now reports `google_maps_configured: true|false` so a fresh `curl` confirms the key is plumbed through the secret, no chat call needed.
+
+**Secrets:** `google-maps-secret` in the `devesesam` Modal workspace (one key: `GOOGLE_MAPS_API_KEY`). See [`directives/deployment.md`](deployment.md).

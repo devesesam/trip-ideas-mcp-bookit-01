@@ -32,6 +32,7 @@ if str(_PKG_ROOT) not in sys.path:
     sys.path.insert(0, str(_PKG_ROOT))
 
 from sanity_client import SanityClient  # noqa: E402
+from services import google_maps  # noqa: E402
 from tools.build_day_itinerary import (  # noqa: E402
     BuildDayInput, DayPlan, Slot, build_day_itinerary,
     DEFAULT_DRIVE_KMH, WINDING_FACTOR,
@@ -109,6 +110,12 @@ class InterDayTransition:
     to_coords: Optional[dict]
     estimated_km: float
     estimated_drive_minutes: int
+    drive_source: str = "haversine"
+    """How the drive estimate was computed: "google_directions" or "haversine"."""
+    polyline_points: list[list[float]] = field(default_factory=list)
+    """Decoded road-following polyline as [[lng,lat], ...] (GeoJSON order).
+    Empty when Google Maps wasn't reachable. Powers the inter-day
+    LineString in the trip-wide GeoJSON."""
 
 
 @dataclass
@@ -134,6 +141,10 @@ class BuildTripOutput:
     summary: Optional[TripSummary]
     unresolved_constraints: list[str]
     latency_ms: int
+    route_geojson: dict = field(default_factory=lambda: {"type": "FeatureCollection", "features": []})
+    """Trip-wide GeoJSON FeatureCollection. Combines per-day Point/LineString
+    features (each tagged with day_index) plus inter-day transition
+    LineStrings. The frontend can render this as one map of the whole trip."""
     error_code: Optional[str] = None
     message: Optional[str] = None
 
@@ -221,7 +232,7 @@ def build_trip_itinerary(
                 if slot.slot_type == "place" and slot.place:
                     used_doc_ids.add(slot.place.sanity_doc_id)
 
-    # --- Inter-day transitions (haversine between consecutive day endpoints) ---
+    # --- Inter-day transitions (Google Maps when configured, haversine fallback) ---
     transitions: list[InterDayTransition] = []
     for a, b in zip(days, days[1:]):
         if not a.day_plan or not b.day_plan:
@@ -229,20 +240,11 @@ def build_trip_itinerary(
         a_end = _last_place_coords(a.day_plan)
         b_start = _first_place_coords(b.day_plan) or b.day_plan.base_coords
         if a_end and b_start:
-            km = _haversine_km(a_end["lat"], a_end["lng"], b_start["lat"], b_start["lng"])
-            drive_km = km * WINDING_FACTOR
-            drive_min = int(round((drive_km / DEFAULT_DRIVE_KMH) * 60.0))
-            transitions.append(InterDayTransition(
-                from_day_index=a.day_index, to_day_index=b.day_index,
-                from_settlement=_last_place_settlement(a.day_plan),
-                to_settlement=_first_place_settlement(b.day_plan) or b.day_plan.base_location,
-                from_coords=a_end, to_coords=b_start,
-                estimated_km=round(km, 1),
-                estimated_drive_minutes=drive_min,
-            ))
+            transitions.append(_compute_transition(a, b, a_end, b_start))
 
-    # --- Trip summary ---
+    # --- Trip summary + trip-wide route GeoJSON ---
     summary = _summarize(days, transitions)
+    trip_route_geojson = _build_trip_geojson(days, transitions)
 
     return BuildTripOutput(
         ok=True,
@@ -252,6 +254,7 @@ def build_trip_itinerary(
         summary=summary,
         unresolved_constraints=unresolved_aggregate,
         latency_ms=int((time.monotonic() - started) * 1000),
+        route_geojson=trip_route_geojson,
     )
 
 
@@ -313,6 +316,114 @@ def _first_place_settlement(plan: DayPlan) -> Optional[str]:
         if s.slot_type == "place" and s.place:
             return s.place.location_settlement
     return None
+
+
+def _compute_transition(
+    a: TripDay, b: TripDay, a_end: dict, b_start: dict,
+) -> InterDayTransition:
+    """Compute the transition between two consecutive days.
+
+    Tries Google Maps Directions for an accurate drive time + road-following
+    polyline; falls back to haversine × WINDING_FACTOR / DEFAULT_DRIVE_KMH on
+    any failure (key missing, API error, non-OK status).
+
+    The polyline is stored as [[lng, lat], ...] (GeoJSON coordinate order)
+    so the trip-wide FeatureCollection can drop it straight into a
+    LineString geometry without further transformation.
+    """
+    from_settlement = _last_place_settlement(a.day_plan) if a.day_plan else None
+    to_settlement = _first_place_settlement(b.day_plan) if b.day_plan else None
+    if not to_settlement and b.day_plan:
+        to_settlement = b.day_plan.base_location
+
+    drive_source = "haversine"
+    polyline_points: list[list[float]] = []
+    estimated_km: float
+    estimated_drive_minutes: int
+
+    result = google_maps.directions(
+        origin=(a_end["lat"], a_end["lng"]),
+        destination=(b_start["lat"], b_start["lng"]),
+    )
+    if result is not None:
+        drive_source = "google_directions"
+        estimated_km = round(result.total_distance_km, 1)
+        estimated_drive_minutes = result.total_duration_min
+        polyline_points = [[lng, lat] for lat, lng in result.overview_polyline_points]
+    else:
+        km = _haversine_km(a_end["lat"], a_end["lng"], b_start["lat"], b_start["lng"])
+        estimated_km = round(km * WINDING_FACTOR, 1)
+        estimated_drive_minutes = int(round(estimated_km / DEFAULT_DRIVE_KMH * 60))
+
+    return InterDayTransition(
+        from_day_index=a.day_index,
+        to_day_index=b.day_index,
+        from_settlement=from_settlement,
+        to_settlement=to_settlement,
+        from_coords=a_end,
+        to_coords=b_start,
+        estimated_km=estimated_km,
+        estimated_drive_minutes=estimated_drive_minutes,
+        drive_source=drive_source,
+        polyline_points=polyline_points,
+    )
+
+
+def _build_trip_geojson(
+    days: list[TripDay], transitions: list[InterDayTransition],
+) -> dict:
+    """Aggregate per-day route features + inter-day transition LineStrings
+    into a single FeatureCollection.
+
+    Each day's existing features get their `properties.day_index` stamped
+    so the frontend can colour-code by day. Inter-day transitions become
+    LineString features with `role="inter_day_drive"`.
+
+    Coordinate order is [lng, lat] throughout (GeoJSON convention, matches
+    what `_build_route_geojson` produces in build_day_itinerary).
+    """
+    features: list[dict] = []
+
+    for d in days:
+        if not d.day_plan:
+            continue
+        day_fc = d.day_plan.route_geojson or {}
+        for feat in day_fc.get("features", []):
+            tagged = {
+                **feat,
+                "properties": {
+                    **(feat.get("properties") or {}),
+                    "day_index": d.day_index,
+                },
+            }
+            features.append(tagged)
+
+    for t in transitions:
+        if t.polyline_points:
+            line_coords = t.polyline_points
+        elif t.from_coords and t.to_coords:
+            line_coords = [
+                [t.from_coords["lng"], t.from_coords["lat"]],
+                [t.to_coords["lng"], t.to_coords["lat"]],
+            ]
+        else:
+            continue
+        features.append({
+            "type": "Feature",
+            "geometry": {"type": "LineString", "coordinates": line_coords},
+            "properties": {
+                "role": "inter_day_drive",
+                "from_day_index": t.from_day_index,
+                "to_day_index": t.to_day_index,
+                "from_settlement": t.from_settlement,
+                "to_settlement": t.to_settlement,
+                "estimated_km": t.estimated_km,
+                "estimated_drive_minutes": t.estimated_drive_minutes,
+                "polyline_source": t.drive_source,
+            },
+        })
+
+    return {"type": "FeatureCollection", "features": features}
 
 
 def _summarize(days: list[TripDay], transitions: list[InterDayTransition]) -> TripSummary:

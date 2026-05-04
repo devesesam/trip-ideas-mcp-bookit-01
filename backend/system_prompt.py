@@ -14,7 +14,7 @@ Design principles (carried from the build plan):
 - Don't run a tool just because you can — if the user is just chatting, chat.
 """
 
-SYSTEM_PROMPT_VERSION = "0.3.0"  # 2026-04-27 evening: added search_accommodation
+SYSTEM_PROMPT_VERSION = "0.4.0"  # 2026-05-05: Google Maps drive times + GeoJSON output
 
 
 # NZ regions — the canonical list as stored in Sanity, with the island they

@@ -43,7 +43,12 @@
       "Bash(taskkill //PID 12816 //F)",
       "Bash(taskkill //PID 26768 //F)",
       "Bash(python execution/tools/search_accommodation.py)",
-      "Bash(curl -s -X POST https://devesesam--tripideas-chat-web.modal.run/chat -H \"Content-Type: application/json\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"Where can I stay in Queenstown? Just give me 3 well-reviewed options.\"}]}')"
+      "Bash(curl -s -X POST https://devesesam--tripideas-chat-web.modal.run/chat -H \"Content-Type: application/json\" -d '{\"messages\":[{\"role\":\"user\",\"content\":\"Where can I stay in Queenstown? Just give me 3 well-reviewed options.\"}]}')",
+      "Bash(PYTHONIOENCODING=utf-8 PYTHONUTF8=1 modal profile activate devesesam)",
+      "Bash(PYTHONIOENCODING=utf-8 PYTHONUTF8=1 modal secret list)",
+      "Bash(curl -s -X POST https://devesesam--tripideas-chat-web.modal.run/health)",
+      "Bash(curl -s \"https://devesesam--tripideas-chat-web.modal.run/?_t=$\\(date +%s%N\\)\")",
+      "Bash(PYTHONIOENCODING=utf-8 PYTHONUTF8=1 modal app list)"
     ]
   }
 }

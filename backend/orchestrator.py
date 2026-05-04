@@ -105,12 +105,14 @@ def create_app() -> FastAPI:
 
     @app.get("/")
     def health() -> dict:
+        from services import google_maps
         return {
             "ok": True,
             "service": "tripideas-chat",
             "prompt_version": SYSTEM_PROMPT_VERSION,
             "model_default": DEFAULT_MODEL,
             "tools": [t["name"] for t in TOOLS],
+            "google_maps_configured": google_maps.is_configured(),
         }
 
     @app.post("/chat")
