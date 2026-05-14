@@ -48,7 +48,10 @@
       "Bash(PYTHONIOENCODING=utf-8 PYTHONUTF8=1 modal secret list)",
       "Bash(curl -s -X POST https://devesesam--tripideas-chat-web.modal.run/health)",
       "Bash(curl -s \"https://devesesam--tripideas-chat-web.modal.run/?_t=$\\(date +%s%N\\)\")",
-      "Bash(PYTHONIOENCODING=utf-8 PYTHONUTF8=1 modal app list)"
+      "Bash(PYTHONIOENCODING=utf-8 PYTHONUTF8=1 modal app list)",
+      "Bash(PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python execution/tags/resolve_tag_ids.py)",
+      "Bash(PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python execution/tags/find_underused_tag_candidates.py --limit 20 --concurrency 4)",
+      "Bash(PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python execution/tags/find_underused_tag_candidates.py --concurrency 8)"
     ]
   }
 }

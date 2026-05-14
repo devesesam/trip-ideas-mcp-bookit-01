@@ -109,6 +109,55 @@ class SanityClient:
         )
         return self.query(groq) or []
 
+    def mutate(
+        self,
+        mutations: list[dict],
+        return_documents: bool = False,
+        dry_run: bool = False,
+        visibility: str = "sync",
+    ) -> dict:
+        """Execute one or more Sanity mutations atomically.
+
+        Each mutation is a dict like one of:
+          {"create": {...}}
+          {"createOrReplace": {...}}
+          {"createIfNotExists": {...}}
+          {"delete": {"id": "..."}}
+          {"patch": {"id": "...", "set": {...}, "setIfMissing": {...},
+                     "insert": {...}, "unset": [...], "inc": {...}}}
+
+        Requires the SANITY_TOKEN to have Editor (write) scope.
+        Raises SanityQueryError on non-200 responses.
+        """
+        import json as _json
+
+        url = f"{self.base_url}/data/mutate/{self.dataset}"
+        params: dict[str, str] = {"visibility": visibility}
+        if return_documents:
+            params["returnDocuments"] = "true"
+        if dry_run:
+            params["dryRun"] = "true"
+
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json",
+        }
+        body = {"mutations": mutations}
+        response = requests.post(
+            url,
+            params=params,
+            headers=headers,
+            data=_json.dumps(body, ensure_ascii=False).encode("utf-8"),
+            timeout=self.timeout,
+        )
+        if response.status_code != 200:
+            raise SanityQueryError(
+                response.status_code,
+                response.text,
+                _json.dumps(mutations, ensure_ascii=False)[:300],
+            )
+        return response.json()
+
 
 def _encode_param(value: Any) -> str:
     """Sanity's GET query API expects param values JSON-encoded."""
