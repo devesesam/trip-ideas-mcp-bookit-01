@@ -29,6 +29,8 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { ChatPanel } from "./ChatPanel";
 import { ChatWidget } from "./ChatWidget";
+import { ChatProvider } from "./ChatContext";
+import { MapPanel } from "./MapPanel";
 import "./styles.css";
 
 
@@ -83,15 +85,29 @@ function mount() {
   const root = ReactDOM.createRoot(mountEl);
 
   if (mode === "embedded") {
+    // Side-by-side: chat (fixed ~420px on desktop) + map (fills remaining).
+    // Mobile: stacked vertically with map below the chat at min 40vh.
     root.render(
       <React.StrictMode>
-        <ChatPanel apiUrl={apiUrl} />
+        <ChatProvider apiUrl={apiUrl}>
+          <div className="flex h-full w-full flex-col lg:flex-row">
+            <div className="flex-1 min-h-0 lg:flex-none lg:basis-[420px] lg:shrink-0 lg:border-r lg:border-brand-border">
+              <ChatPanel />
+            </div>
+            <div className="flex-1 min-h-[40vh] lg:min-h-0">
+              <MapPanel />
+            </div>
+          </div>
+        </ChatProvider>
       </React.StrictMode>,
     );
   } else {
+    // Floating mode: corner widget only, no map.
     root.render(
       <React.StrictMode>
-        <ChatWidget apiUrl={apiUrl} defaultOpen={defaultOpen} />
+        <ChatProvider apiUrl={apiUrl}>
+          <ChatWidget defaultOpen={defaultOpen} />
+        </ChatProvider>
       </React.StrictMode>,
     );
   }

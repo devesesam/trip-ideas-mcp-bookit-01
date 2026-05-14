@@ -7,12 +7,14 @@
  * own keeps both ends decoupled and the protocol simple.
  *
  * SSE event format (from backend/orchestrator.py):
- *   event: text          data: {"delta": "..."}
- *   event: tool_use      data: {"id": "...", "name": "..."}
- *   event: tool_result   data: {"id": "...", "name": "...", "ok": bool, "summary": "...", "elapsed_ms": N}
- *   event: usage         data: {"input_tokens": N, "output_tokens": N, "cost_usd": ..., "loops": N, "elapsed_ms": N}
- *   event: error         data: {"message": "..."}
- *   event: done          data: {"finish_reason": "..."}
+ *   event: text              data: {"delta": "..."}
+ *   event: tool_use          data: {"id": "...", "name": "..."}
+ *   event: tool_args         data: {"id": "...", "name": "...", "args": {...}}
+ *   event: tool_result       data: {"id": "...", "name": "...", "ok": bool, "summary": "...", "elapsed_ms": N}
+ *   event: tool_result_data  data: {"id": "...", "name": "...", "route_geojson": {...}}    (itinerary tools only)
+ *   event: usage             data: {"input_tokens": N, "output_tokens": N, "cost_usd": ..., "loops": N, "elapsed_ms": N}
+ *   event: error             data: {"message": "..."}
+ *   event: done              data: {"finish_reason": "..."}
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -29,6 +31,11 @@ export interface ToolCall {
   args?: Record<string, unknown>;
   summary?: string;
   elapsedMs?: number;
+  /** GeoJSON FeatureCollection from itinerary tools. Populated by the
+   *  `tool_result_data` SSE event for build_day_itinerary, build_trip_itinerary,
+   *  and refine_itinerary. Stripped from localStorage to avoid quota issues —
+   *  in-memory only. */
+  routeGeoJson?: Record<string, unknown>;
 }
 
 export interface UsageStats {
@@ -63,6 +70,18 @@ export interface UseChatReturn {
   reset: () => void;
   isStreaming: boolean;
   totalCostUsd: number;
+  /** GeoJSON from the most recent completed itinerary tool call. The map
+   *  panel reads this. Walks messages + tool calls in reverse chronological
+   *  order and returns the first `routeGeoJson` found. `null` until the
+   *  first itinerary tool completes. */
+  latestRoute: Record<string, unknown> | null;
+  /** Stable id for the latest route — changes only when a new geojson arrives.
+   *  Useful as a React `key` to force-remount the map on update. */
+  latestRouteId: string | null;
+  /** True while an itinerary tool is currently running (build_day_itinerary,
+   *  build_trip_itinerary, refine_itinerary). The map panel uses this to show
+   *  a loading state. */
+  isBuildingItinerary: boolean;
 }
 
 const STORAGE_KEY_DEFAULT = "tripideas_chat_history_v1";
@@ -91,7 +110,14 @@ function loadHistory(key: string): ChatMessage[] {
 function saveHistory(key: string, messages: ChatMessage[]): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(key, JSON.stringify(messages));
+    // Strip routeGeoJson from every tool call before persisting — a single
+    // trip can be ~250 KB and localStorage has a 5–10 MB origin quota.
+    // After a reload `latestRoute` is null until the next itinerary tool runs.
+    const slim = messages.map((m) => ({
+      ...m,
+      toolCalls: m.toolCalls.map(({ routeGeoJson: _drop, ...rest }) => rest),
+    }));
+    window.localStorage.setItem(key, JSON.stringify(slim));
   } catch {
     // localStorage might be full or disabled; non-fatal
   }
@@ -117,6 +143,35 @@ export function useChat({
     () => messages.reduce((s, m) => s + (m.usage?.costUsd ?? 0), 0),
     [messages],
   );
+
+  // Walk messages newest → oldest, then their tool calls newest → oldest,
+  // and return the first routeGeoJson found. The id is the originating
+  // tool_use id, stable across renders until a new geojson arrives.
+  const { latestRoute, latestRouteId } = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      for (let j = m.toolCalls.length - 1; j >= 0; j--) {
+        const tc = m.toolCalls[j];
+        if (tc.routeGeoJson) {
+          return { latestRoute: tc.routeGeoJson, latestRouteId: tc.id };
+        }
+      }
+    }
+    return { latestRoute: null, latestRouteId: null };
+  }, [messages]);
+
+  const isBuildingItinerary = useMemo(() => {
+    if (!isStreaming) return false;
+    const last = messages[messages.length - 1];
+    if (!last) return false;
+    return last.toolCalls.some(
+      (tc) =>
+        tc.status === "running" &&
+        (tc.name === "build_day_itinerary" ||
+          tc.name === "build_trip_itinerary" ||
+          tc.name === "refine_itinerary"),
+    );
+  }, [isStreaming, messages]);
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
@@ -211,7 +266,18 @@ export function useChat({
     [apiUrl, input, isStreaming, messages, onError],
   );
 
-  return { messages, input, setInput, sendMessage, reset, isStreaming, totalCostUsd };
+  return {
+    messages,
+    input,
+    setInput,
+    sendMessage,
+    reset,
+    isStreaming,
+    totalCostUsd,
+    latestRoute,
+    latestRouteId,
+    isBuildingItinerary,
+  };
 }
 
 
@@ -307,6 +373,21 @@ function applyEventToMessage(
         toolCalls: msg.toolCalls.map((c) =>
           c.id === id
             ? { ...c, status: ok ? "done" : "error", summary, elapsedMs }
+            : c,
+        ),
+      };
+    }
+    case "tool_result_data": {
+      // Emitted by the backend after tool_result for itinerary tools, carrying
+      // the route_geojson FeatureCollection. Attaches to the matching tool call.
+      const id = String(data.id ?? "");
+      const geojson = data.route_geojson;
+      if (!geojson || typeof geojson !== "object") return msg;
+      return {
+        ...msg,
+        toolCalls: msg.toolCalls.map((c) =>
+          c.id === id
+            ? { ...c, routeGeoJson: geojson as Record<string, unknown> }
             : c,
         ),
       };

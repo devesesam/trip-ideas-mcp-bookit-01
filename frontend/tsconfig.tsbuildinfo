@@ -1,1 +1,1 @@
-{"root":["./src/chatpanel.tsx","./src/chatwidget.tsx","./src/markdown.tsx","./src/main.tsx","./src/theme.ts","./src/usechat.ts","./src/vite-env.d.ts"],"version":"5.9.3"}
+{"root":["./src/chatcontext.tsx","./src/chatpanel.tsx","./src/chatwidget.tsx","./src/mappanel.tsx","./src/markdown.tsx","./src/main.tsx","./src/theme.ts","./src/usechat.ts","./src/vite-env.d.ts"],"version":"5.9.3"}

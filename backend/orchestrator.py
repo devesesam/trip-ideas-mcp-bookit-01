@@ -279,6 +279,17 @@ async def run_chat_loop(
                 "elapsed_ms": tool_elapsed,
             })
 
+            # Forward GeoJSON routes to the frontend so the map panel can draw
+            # them. Emitted as a separate event AFTER tool_result so the tool
+            # completion tick is never delayed by polyline serialization.
+            route_geojson = _extract_route_geojson(tu["name"], result)
+            if route_geojson:
+                yield _sse("tool_result_data", {
+                    "id": tu["id"],
+                    "name": tu["name"],
+                    "route_geojson": route_geojson,
+                })
+
             tool_result_blocks.append({
                 "type": "tool_result",
                 "tool_use_id": tu["id"],
@@ -306,6 +317,36 @@ def _sse(event: str, data: dict) -> bytes:
 def _calc_cost(model: str, input_tokens: int, output_tokens: int) -> float:
     pricing = MODEL_PRICING.get(model, MODEL_PRICING["claude-sonnet-4-6"])
     return (input_tokens / 1_000_000) * pricing["input"] + (output_tokens / 1_000_000) * pricing["output"]
+
+
+_GEOJSON_TOOLS = {"build_day_itinerary", "build_trip_itinerary", "refine_itinerary"}
+
+
+def _extract_route_geojson(name: str, result: dict) -> Optional[dict]:
+    """Pull the route_geojson FeatureCollection out of an itinerary tool result.
+
+    Path varies by tool — DayPlan owns the field for day/refine, BuildTripOutput
+    owns it directly for trips:
+    - build_day_itinerary:  result["day_plan"]["route_geojson"]
+    - refine_itinerary:     result["updated_plan"]["route_geojson"]
+    - build_trip_itinerary: result["route_geojson"]   (trip-wide aggregation)
+
+    Returns None for any tool that doesn't produce a route or whose result
+    didn't include one (e.g. errors, empty plans).
+    """
+    if name not in _GEOJSON_TOOLS:
+        return None
+    if name == "build_day_itinerary":
+        plan = result.get("day_plan") or {}
+        fc = plan.get("route_geojson") if isinstance(plan, dict) else None
+    elif name == "refine_itinerary":
+        plan = result.get("updated_plan") or {}
+        fc = plan.get("route_geojson") if isinstance(plan, dict) else None
+    else:  # build_trip_itinerary
+        fc = result.get("route_geojson")
+    if not isinstance(fc, dict) or not fc.get("features"):
+        return None
+    return fc
 
 
 def _summarize_tool_result(name: str, result: dict) -> str:

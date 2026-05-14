@@ -6,8 +6,12 @@
  * (e.g., a help button on every page). For the primary "/plan-a-trip"-style
  * chat experience, use <ChatPanel> directly so it sits inline with the page.
  *
+ * Must be rendered inside <ChatProvider> (see main.tsx).
+ *
  * Composition:
- *   <ChatWidget apiUrl="https://..." />
+ *   <ChatProvider apiUrl="https://...">
+ *     <ChatWidget />
+ *   </ChatProvider>
  */
 
 import { useState } from "react";
@@ -17,13 +21,12 @@ import { TRIPIDEAS_THEME } from "./theme";
 
 
 interface Props {
-  apiUrl: string;
   /** Start opened on mount. Useful for the demo page. */
   defaultOpen?: boolean;
 }
 
 
-export function ChatWidget({ apiUrl, defaultOpen = false }: Props) {
+export function ChatWidget({ defaultOpen = false }: Props) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
@@ -55,7 +58,6 @@ export function ChatWidget({ apiUrl, defaultOpen = false }: Props) {
 
           <div className="relative h-full w-full max-h-[100dvh] overflow-hidden border border-brand-border bg-brand-surface shadow-widget animate-slide-up sm:h-[640px] sm:max-h-[85vh] sm:w-[420px] sm:rounded-widget">
             <ChatPanel
-              apiUrl={apiUrl}
               showCloseButton
               onClose={() => setOpen(false)}
             />

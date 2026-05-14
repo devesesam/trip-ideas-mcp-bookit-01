@@ -14,7 +14,7 @@ Design principles (carried from the build plan):
 - Don't run a tool just because you can — if the user is just chatting, chat.
 """
 
-SYSTEM_PROMPT_VERSION = "0.4.0"  # 2026-05-05: Google Maps drive times + GeoJSON output
+SYSTEM_PROMPT_VERSION = "0.4.1"  # 2026-05-05: stream route_geojson over SSE for map panel
 
 
 # NZ regions — the canonical list as stored in Sanity, with the island they

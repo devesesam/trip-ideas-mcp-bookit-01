@@ -8,21 +8,27 @@
  * For the floating bottom-right popup pattern, use ChatWidget which wraps
  * ChatPanel in a positioned shell.
  *
+ * Must be rendered inside <ChatProvider> (see main.tsx). The provider owns
+ * the single useChat instance so sibling components like MapPanel can read
+ * the same conversation state.
+ *
  * Composition:
- *   <div style={{ height: 600 }}>
- *     <ChatPanel apiUrl="https://..." />
- *   </div>
+ *   <ChatProvider apiUrl="https://...">
+ *     <div style={{ height: 600 }}>
+ *       <ChatPanel />
+ *     </div>
+ *   </ChatProvider>
  */
 
 import { useEffect, useRef } from "react";
 import { RotateCcw, Send, Sparkles, X } from "lucide-react";
 import { Markdown } from "./Markdown";
 import { TRIPIDEAS_THEME, applyTheme } from "./theme";
-import { useChat, type ChatMessage, type ToolCall } from "./useChat";
+import { useChatContext } from "./ChatContext";
+import { type ChatMessage, type ToolCall } from "./useChat";
 
 
 export interface ChatPanelProps {
-  apiUrl: string;
   /** Hide the brand header bar (e.g., when the host page has its own page title). */
   hideHeader?: boolean;
   /** Show an X close button in the header (used by ChatWidget's floating mode). */
@@ -34,13 +40,12 @@ export interface ChatPanelProps {
 
 
 export function ChatPanel({
-  apiUrl,
   hideHeader = false,
   showCloseButton = false,
   onClose,
   className = "",
 }: ChatPanelProps) {
-  const { messages, input, setInput, sendMessage, reset, isStreaming } = useChat({ apiUrl });
+  const { messages, input, setInput, sendMessage, reset, isStreaming } = useChatContext();
 
   // Apply TripIdeas theme tokens on mount; idempotent across multiple panels
   useEffect(() => {
