@@ -273,6 +273,7 @@ def build_day_itinerary(
             place_subtypes_used=place_subtypes_used,
             max_drive_min=inp.max_drive_minutes_between_stops,
             meal_inserted=meal_inserted,
+            is_first_pick=(place_count == 0),
         )
         if not choice:
             break
@@ -549,10 +550,20 @@ def _pick_best_candidate(
     place_subtypes_used: list[str],
     max_drive_min: int,
     meal_inserted: bool,
+    is_first_pick: bool = False,
 ) -> Optional[tuple[SearchPlaceResult, float, int]]:
-    """Return (candidate, drive_minutes, visit_minutes) of the best feasible pick, or None."""
+    """Return (candidate, drive_minutes, visit_minutes) of the best feasible pick, or None.
+
+    `is_first_pick` triples the drive-time penalty so the day starts near the
+    user's stated base. Without this, a high-scoring place far from base can
+    win the first slot — e.g. asking for a "coastal day around Wellington CBD"
+    used to land on Mākara Beach (12 km west, ~25 min drive) because its score
+    edge outweighed a small 0.05/min penalty. Subsequent slots keep the normal
+    penalty so road-trip days can still range widely once anchored.
+    """
     best: Optional[tuple[SearchPlaceResult, float, int]] = None
     best_score = -math.inf
+    drive_penalty_per_min = 0.15 if is_first_pick else 0.05
 
     for c in candidates:
         if c.sanity_doc_id in used_ids:
@@ -569,7 +580,7 @@ def _pick_best_candidate(
             continue
 
         # Score: search_places score minus drive penalty, plus diversity bonus
-        score = c.score - (drive_min * 0.05)
+        score = c.score - (drive_min * drive_penalty_per_min)
         if c.place_subtype_derived and c.place_subtype_derived in place_subtypes_used:
             score -= 0.7
         if score > best_score:

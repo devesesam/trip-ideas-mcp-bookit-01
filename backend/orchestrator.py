@@ -47,8 +47,25 @@ except ImportError:
 
 import anthropic  # noqa: E402
 
-from backend.system_prompt import SYSTEM_PROMPT, SYSTEM_PROMPT_VERSION  # noqa: E402
+from backend.system_prompt import SYSTEM_PROMPT_VERSION, compose_system_prompt  # noqa: E402
 from backend.tool_definitions import TOOLS, dispatch_tool  # noqa: E402
+
+
+# Compose the system prompt ONCE at process start with the live Sanity
+# region/sub-region taxonomy injected. This means redeploying picks up new
+# sub-regions Douglas adds — no code change required. If Sanity is
+# unreachable at startup, fall back to the no-taxonomy prompt so the chat
+# still works (the model can call list_subregions on demand).
+def _load_system_prompt() -> str:
+    try:
+        from tools.list_subregions import build_taxonomy_snapshot
+        snapshot = build_taxonomy_snapshot()
+    except Exception:
+        snapshot = ""
+    return compose_system_prompt(snapshot)
+
+
+SYSTEM_PROMPT = _load_system_prompt()
 
 
 # Pricing (Sonnet 4.6 as of writing) for the cost telemetry.
@@ -60,7 +77,9 @@ MODEL_PRICING = {
     "claude-opus-4-7":     {"input": 15.0, "output": 75.0},
 }
 MAX_TOOL_LOOPS = 8                 # safety cap on tool-use iterations per turn
-ANTHROPIC_TIMEOUT_S = 60.0
+ANTHROPIC_TIMEOUT_S = 120.0        # bumped 2026-05-18 — heavy parallel-tool turns
+                                   # (e.g. 17 search_places calls in one loop) were
+                                   # hitting the old 60s client timeout intermittently.
 
 
 # =====================================================================
@@ -199,6 +218,13 @@ async def run_chat_loop(
                         # Announce the tool call as soon as we see it begin
                         tool_uses.append({"id": block.id, "name": block.name, "input": {}})
                         yield _sse("tool_use", {"id": block.id, "name": block.name})
+                    elif block.type == "server_tool_use":
+                        # Anthropic-hosted tool (e.g. web_search). We don't
+                        # dispatch — Anthropic runs it server-side and the
+                        # result comes back as web_search_tool_result inline.
+                        # Emit the same tool_use SSE event so the frontend
+                        # shows a "running" indicator.
+                        yield _sse("tool_use", {"id": block.id, "name": block.name})
 
                 elif etype == "content_block_delta":
                     delta = event.delta
@@ -226,11 +252,22 @@ async def run_chat_loop(
                 getattr(final_message.usage, "output_tokens", 0) or 0,
             )
 
-        # Rebuild the assistant content list with tool_use input filled in
+        # Rebuild the assistant content list with tool_use input filled in.
+        # Server-tool blocks (server_tool_use + web_search_tool_result) must
+        # be preserved verbatim — they're part of the conversation state and
+        # citation continuity depends on them.
         assistant_content_blocks = []
         for block in final_message.content:
             if block.type == "text":
-                assistant_content_blocks.append({"type": "text", "text": block.text})
+                # Preserve citations if the SDK attached any (web search refs)
+                text_block: dict = {"type": "text", "text": block.text}
+                cites = getattr(block, "citations", None)
+                if cites:
+                    text_block["citations"] = [
+                        c.model_dump() if hasattr(c, "model_dump") else c
+                        for c in cites
+                    ]
+                assistant_content_blocks.append(text_block)
             elif block.type == "tool_use":
                 assistant_content_blocks.append({
                     "type": "tool_use",
@@ -238,7 +275,19 @@ async def run_chat_loop(
                     "name": block.name,
                     "input": block.input,
                 })
+            elif block.type in ("server_tool_use", "web_search_tool_result"):
+                # Pass through as a dict — Anthropic needs the exact shape
+                # back if this turn is later referenced (multi-turn citations).
+                assistant_content_blocks.append(
+                    block.model_dump() if hasattr(block, "model_dump") else dict(block)
+                )
         convo.append({"role": "assistant", "content": assistant_content_blocks})
+
+        # `pause_turn` happens when a server tool (web_search) ran but the
+        # model has more to say — we loop again with no dispatch, just resume.
+        # Custom tools land on `tool_use` (handled below).
+        if final_message.stop_reason == "pause_turn":
+            continue
 
         if final_message.stop_reason != "tool_use":
             # Done — emit usage + done
@@ -373,6 +422,11 @@ def _summarize_tool_result(name: str, result: dict) -> str:
     if name == "refine_itinerary":
         diff = result.get("diff") or {}
         return f"refine_itinerary ({result.get('regeneration_mode_used', '?')}) → {diff.get('summary', 'updated')}"
+    if name == "find_place_by_name":
+        return f"find_place_by_name → {result.get('count', 0)} matches"
+    if name == "list_subregions":
+        subs = result.get("subRegions") or []
+        return f"list_subregions({result.get('region', '?')}) → {len(subs)} sub-regions, {result.get('total_places', 0)} places"
     return f"{name} → ok"
 
 

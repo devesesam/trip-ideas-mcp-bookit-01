@@ -39,6 +39,10 @@ modal profile activate devesesam
 PYTHONIOENCODING=utf-8 PYTHONUTF8=1 modal deploy backend/modal_app.py
 ```
 
+### Anthropic Console settings (org-admin requirement)
+
+Beyond the Modal secrets above, **Web Search must be enabled in the Anthropic Console** for the API key referenced by `tripideas-secrets`. Toggle is at https://console.anthropic.com/settings/privacy (org admin only). Currently enabled for the workspace owning `ANTHROPIC_API_KEY`. If `web_search` ever returns `unavailable` or `invalid_input` error blocks unexpectedly, this is the first thing to check.
+
 ### Common gotchas
 
 - **Wrong workspace.** `modal profile list` shows multiple profiles for this user (`devesesam`, `rvnu`). Only `devesesam` has `tripideas-secrets` and `google-maps-secret`. Deploying from another profile fails with `Secret '...' not found in environment 'main'`.

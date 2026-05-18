@@ -31,7 +31,11 @@ from tools.build_day_itinerary import (  # noqa: E402
 from tools.build_trip_itinerary import (  # noqa: E402
     BuildTripInput, DayAnchor, build_trip_itinerary,
 )
+from tools.find_place_by_name import (  # noqa: E402
+    FindPlaceByNameInput, find_place_by_name,
+)
 from tools.get_place_summary import get_place_summary  # noqa: E402
+from tools.list_subregions import list_subregions  # noqa: E402
 from tools.refine_itinerary import RefineInput, refine_itinerary  # noqa: E402
 from tools.search_accommodation import (  # noqa: E402
     NearFilter as AccomNearFilter,
@@ -98,17 +102,27 @@ SEARCH_PLACES_SCHEMA = {
             },
             "subRegion": {
                 "type": "string",
-                "description": "Optional. Narrow to a specific subRegion (e.g. 'Hibiscus Coast', 'Catlins').",
+                "description": "Optional (legacy single-zone). Use `subRegions` for multi-zone in one call.",
+            },
+            "subRegions": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Optional. One or more sub-region names. Multi-zone request like 'CBD + island day' is one call with subRegions=['Central Auckland','Hauraki Gulf Islands'] — do NOT fan out.",
             },
             "themes": {
                 "type": "array",
                 "items": {"type": "string", "enum": _THEMES},
-                "description": "Optional. Filter places matching these themes (any-match).",
+                "description": "Optional. Soft user-intent grouping ('coastal', 'alpine'). Acts as a hard tag-AND filter.",
             },
             "place_subtypes": {
                 "type": "array",
                 "items": {"type": "string", "enum": _PLACE_SUBTYPES},
-                "description": "Optional. Filter for specific kinds of place.",
+                "description": "Optional. Editorial category (e.g. 'museum', 'beach', 'walk'). Hard filter — pages without a matching tag are excluded.",
+            },
+            "tags": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Optional. Exact Sanity tag names (e.g. 'Freedom Camping', 'Dog Friendly'). Use when the user names a specific feature Douglas has tagged. Different lever from `themes`/`place_subtypes` — those go through the tag-mapping; this is a direct exact-match.",
             },
             "physical_intensity_max": {
                 "type": "string",
@@ -406,6 +420,79 @@ SEARCH_ACCOMMODATION_SCHEMA = {
 }
 
 
+FIND_PLACE_BY_NAME_SCHEMA = {
+    "name": "find_place_by_name",
+    "description": (
+        "Locate a Tripideas page by its title or slug. Use this when the user "
+        "names a specific place ('tell me about Hamiltons Gap') and you need "
+        "its sanity_doc_id before calling get_place_summary, OR when you want "
+        "to confirm a page exists before referring to it. Unlike search_places, "
+        "this also finds pages with thin/no aiMetadata — check the "
+        "`has_aimetadata` flag on each result before following up with "
+        "get_place_summary."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "Substring to match against page titles and slugs. Case-insensitive.",
+            },
+            "region": {
+                "type": "string",
+                "description": "Optional. Scope to a region to disambiguate (e.g. 'Mission Bay' in Auckland vs Christchurch).",
+            },
+            "limit": {
+                "type": "integer", "minimum": 1, "maximum": 30, "default": 10,
+            },
+        },
+        "required": ["name"],
+    },
+}
+
+
+LIST_SUBREGIONS_SCHEMA = {
+    "name": "list_subregions",
+    "description": (
+        "Return the live sub-region list for a region, with place counts. A "
+        "snapshot is included in the system prompt at deploy time — call this "
+        "tool when the user mentions a sub-region that isn't in the snapshot, "
+        "or when you need to confirm an exact tag string before calling "
+        "search_places (Douglas's taxonomy uses specific phrasings like "
+        "'Central Auckland', 'Wellington City', 'Catlins')."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "region": {
+                "type": "string",
+                "description": "NZ region name (e.g. 'Auckland', 'Otago').",
+            },
+        },
+        "required": ["region"],
+    },
+}
+
+
+# Anthropic's built-in web_search tool. Server-side execution — Anthropic
+# runs the search and the model sees the results inline. No dispatch needed
+# in this file; orchestrator handles the server_tool_use / web_search_tool_result
+# block types in the stream and conversation rebuild.
+#
+# Cost: $10/1000 searches ($0.01 each), billed to the same Anthropic account.
+# `max_uses=3` caps cost per chat turn at $0.03 — model will rarely need
+# more than 1-2 searches for the gated fallback use case.
+#
+# Requires "Web search" to be enabled in the Anthropic Console under
+# /settings/privacy (org-admin only). Failures surface as web_search_tool_result
+# blocks with error codes, not exceptions.
+WEB_SEARCH_SCHEMA = {
+    "type": "web_search_20250305",
+    "name": "web_search",
+    "max_uses": 3,
+}
+
+
 TOOLS = [
     SEARCH_PLACES_SCHEMA,
     GET_PLACE_SUMMARY_SCHEMA,
@@ -413,6 +500,9 @@ TOOLS = [
     BUILD_TRIP_ITINERARY_SCHEMA,
     REFINE_ITINERARY_SCHEMA,
     SEARCH_ACCOMMODATION_SCHEMA,
+    FIND_PLACE_BY_NAME_SCHEMA,
+    LIST_SUBREGIONS_SCHEMA,
+    WEB_SEARCH_SCHEMA,
 ]
 
 
@@ -447,6 +537,17 @@ def dispatch_tool(name: str, args: dict, client: SanityClient | None = None) -> 
         elif name == "search_accommodation":
             inp = _make_search_accommodation_input(args)
             out = search_accommodation(inp, client=client)
+        elif name == "find_place_by_name":
+            out = find_place_by_name(
+                FindPlaceByNameInput(
+                    name=args["name"],
+                    region=args.get("region"),
+                    limit=int(args.get("limit", 10)),
+                ),
+                client=client,
+            )
+        elif name == "list_subregions":
+            out = list_subregions(args["region"], client=client)
         else:
             return {"ok": False, "error_code": "UNKNOWN_TOOL",
                     "message": f"No tool named {name!r}"}
@@ -473,8 +574,10 @@ def _make_search_places_input(args: dict) -> SearchPlacesInput:
     return SearchPlacesInput(
         region=args["region"],
         subRegion=args.get("subRegion"),
+        subRegions=args.get("subRegions", []) or [],
         themes=args.get("themes", []) or [],
         place_subtypes=args.get("place_subtypes", []) or [],
+        tags=args.get("tags", []) or [],
         physical_intensity_max=args.get("physical_intensity_max"),
         duration_bands=args.get("duration_bands", []) or [],
         dog_friendly_required=bool(args.get("dog_friendly_required", False)),

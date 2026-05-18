@@ -46,7 +46,11 @@ app = modal.App("tripideas-chat", image=image, secrets=SECRETS)
     secrets=SECRETS,
     min_containers=0,                 # scale to zero when idle
     max_containers=5,                 # cap at 5 concurrent containers (tune later)
-    timeout=120,                      # per-request timeout
+    timeout=300,                      # per-request timeout — bumped from 120s
+                                      # (2026-05-18) to absorb heavy parallel-tool-call
+                                      # bursts (e.g. 17 simultaneous search_places in
+                                      # the taxonomy probe). 5 min is a soft cap; chat
+                                      # turns should still complete in well under that.
 )
 @modal.asgi_app()
 def web():

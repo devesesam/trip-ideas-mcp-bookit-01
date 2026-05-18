@@ -178,12 +178,15 @@ Each tool has its own contract doc under `directives/tool_contracts/`. As of 202
 
 | Tool | Contract doc | Status |
 |---|---|---|
-| `search_places` | (inline in tool file) | Verified working |
+| `search_places` | (inline in tool file) | Verified working — tag-intersection bug fixed Sprint 4.9 |
 | `get_place_summary` | (inline in tool file) | Verified working |
-| `build_day_itinerary` | (inline in tool file) | Verified working |
+| `build_day_itinerary` | (inline in tool file) | Verified working — first-pick proximity bias + densest-cluster base Sprint 5.0 |
 | `build_trip_itinerary` | (inline in tool file) | Verified working |
 | `refine_itinerary` | (inline in tool file) | Verified working |
-| `search_accommodation` | [`tool_contracts/search_accommodation.md`](tool_contracts/search_accommodation.md) | Verified working — see contract for important data caveats |
+| `search_accommodation` | [`tool_contracts/search_accommodation.md`](tool_contracts/search_accommodation.md) | Verified working — `book_link` is null until accommodation pages are published (see contract) |
+| `find_place_by_name` | (inline in tool file) | Sprint 4.9 — locate page by title/slug with `has_aimetadata` flag |
+| `list_subregions` | (inline in tool file) | Sprint 4.9 — live sub-region taxonomy; also injected into the system prompt at startup |
+| `web_search` | [`tool_contracts/web_search.md`](tool_contracts/web_search.md) | Sprint 5.1 — Anthropic server tool, gated by HARD_RULE #11 |
 
 ---
 
@@ -219,3 +222,87 @@ The trip-level `route_geojson` is the union of every day's per-day features (eac
 **Health diagnostic:** `GET /` on the deployed orchestrator now reports `google_maps_configured: true|false` so a fresh `curl` confirms the key is plumbed through the secret, no chat call needed.
 
 **Secrets:** `google-maps-secret` in the `devesesam` Modal workspace (one key: `GOOGLE_MAPS_API_KEY`). See [`directives/deployment.md`](deployment.md).
+
+---
+
+## URL conventions on tripideas.nz (Sprint 5.1, 2026-05-18)
+
+Probed against the live sitemap + HEAD requests:
+
+| Content type | Canonical URL | Notes |
+|---|---|---|
+| Place page | `https://www.tripideas.nz/place/<slug>` | The bare `tripideas.nz/<slug>` works via legacy redirect but isn't canonical |
+| Post (blog) | `https://www.tripideas.nz/post/<slug>` | Sitemap-confirmed; not currently surfaced by our tools |
+| Region overview | `https://www.tripideas.nz/region/<slug>` | Sitemap-confirmed |
+| Tag overview | `https://www.tripideas.nz/tag/<slug>` | Sitemap-confirmed |
+| **Accommodation** | **No public URL.** Every variant 404s. | Sanity has the data; frontend doesn't publish individual accommodation pages |
+
+**Implications for the chat:**
+- Place links must use the `/place/` prefix (HARD_RULE #1).
+- Accommodation `book_link` is hardcoded to `None` in [`search_accommodation.py`](../execution/tools/search_accommodation.py). The chat surfaces `contact.website` (operator's own site) as the actionable link instead.
+- If Douglas later publishes accommodation pages, the single fix is to set `book_link=f"https://www.tripideas.nz/<correct-prefix>/{slug}"` in [`search_accommodation.py:305`](../execution/tools/search_accommodation.py) — no system prompt change needed because the chat already routes lodging questions through `search_accommodation`.
+
+To re-probe if the routing changes: fetch any accommodation slug from Sanity, HEAD-request a few candidate prefixes, see which returns 200. The Sprint 5.1 issue log has the script.
+
+---
+
+## Web search integration (Sprint 5.1, 2026-05-18)
+
+**Why:** The chatbot was citing external URLs (`hobbitontours.com`, etc.) from training data — looked like web search but wasn't. Added Anthropic's built-in `web_search_20250305` server tool as a gated fallback for genuinely-current information.
+
+**How it's different from our other tools:** It's a **server tool** — Anthropic runs the search; we don't dispatch. The orchestrator handles two new content-block types when rebuilding the assistant message for conversation continuity:
+- `server_tool_use` — model decided to search (emit `tool_use` SSE event for UI indicator)
+- `web_search_tool_result` — search results returned inline (preserve verbatim in `convo`)
+
+The orchestrator also handles `pause_turn` stop_reason — when a server tool ran but the model has more to say, loop again without dispatching.
+
+**Cost + quotas:**
+- $10 per 1,000 searches ($0.01 each), billed via the same Anthropic API key
+- `max_uses=3` per chat turn caps per-turn cost at $0.03
+- Citations don't count toward token usage
+
+**Gating** (HARD_RULE #11 in [`backend/system_prompt.py`](../backend/system_prompt.py)):
+- ONLY fire when Tripideas tools already returned zero AND the user needs current info (opening hours, schedules, prices, news)
+- Don't use for general descriptions or padding
+- Always cite the URLs Anthropic returns
+
+**Verified smoke results (2026-05-18):**
+- *"Current ferry times to Waiheke"* → fires web_search, cites Fullers360 + Island Direct + Auckland Transport ✓
+- *"Coastal walks in Northland"* → fires `search_places` only, no `web_search` ✓
+
+**Org-admin requirement:** Web Search must be enabled in the Anthropic Console under `/settings/privacy` for the workspace's API key. Currently enabled for `devesesam`. If web_search ever stops working, check this first — failures come back as `web_search_tool_result` blocks with error codes (`too_many_requests`, `invalid_input`, `max_uses_exceeded`, `query_too_long`, `unavailable`), not as exceptions.
+
+---
+
+## System prompt structure (HARD_RULES at 11 rules, Sprint 5.1)
+
+The system prompt has grown to ~18 KB after the live taxonomy snapshot is injected. Structure:
+
+1. Tool list (9 tools)
+2. **HARD_RULES** (11 numbered, do-not-violate rules) — see below
+3. NZ regions reference (cheat sheet)
+4. Live sub-region taxonomy (injected from Sanity at startup)
+5. Tool-use guidance (when to call which tool)
+6. **ITINERARY_FORMAT** (canonical 4-column table)
+7. **EXTERNAL_REFERENCES** (Douglas's curated default-resource list)
+8. Conversational style
+9. Pre-tool acknowledgement (latency UX)
+10. Prompt version stamp
+
+The 11 HARD_RULES (one-line summaries):
+
+| # | Rule | Sprint added |
+|---|---|---|
+| 1 | Never emit a tripideas.nz URL unless the slug came from a tool result; places use `/place/<slug>`, accommodation has no public URL | 4.9 (extended 5.1) |
+| 2 | Always search before composing — including for queries you think tools won't cover | 4.9 (tightened 5.0+5.3) |
+| 3 | Use the right filter lever — `themes` / `place_subtypes` / `tags` are distinct | 4.9 |
+| 4 | Multi-zone requests use `subRegions=[...]` in one call, not fan-out | 4.9 |
+| 5 | Find-by-name → look up the ID → then summarise (use `find_place_by_name` first) | 4.9 |
+| 6 | Use `list_subregions(region)` when unsure of the live taxonomy | 4.9 |
+| 7 | Quote place titles verbatim — macrons, apostrophes, capitalisation preserved | 5.0 |
+| 8 | Verify named places via `find_place_by_name` before mentioning them | 5.0 (tightened 5.2) |
+| 9 | Pick `candidate_radius_km` from the user's stated scope (15 km walkable → 80+ road trip) | 5.0 |
+| 10 | Translate colloquial location names ("Wellington CBD") to canonical sub-region tags | 5.2 |
+| 11 | `web_search` is the LAST-resort fallback — gated to "Tripideas tools returned zero AND needs live info" | 5.1 |
+
+Each rule lives in [`backend/system_prompt.py`](../backend/system_prompt.py) `HARD_RULES`. When adding rules: keep the format consistent (numbered, ❌/✓ examples where the rule is ambiguous), and bump `SYSTEM_PROMPT_VERSION`.

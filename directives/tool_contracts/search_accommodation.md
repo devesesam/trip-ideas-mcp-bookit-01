@@ -7,9 +7,12 @@
 
 ## What it does
 
-Queries Sanity's `_type == "accommodation"` documents for places to stay, applies in-memory scoring (review weight + book-now boost + Gold Medal boost − distance penalty), returns ranked results with photos, contact details, and a `book_link` to `tripideas.nz/<slug>`.
+Queries Sanity's `_type == "accommodation"` documents for places to stay, applies in-memory scoring (review weight + book-now boost + Gold Medal boost − distance penalty), returns ranked results with photos and contact details.
 
 **No external Bookit API call.** All data comes from Sanity, which has the Bookit-synced fields cached. This tool is the v1 way to surface accommodation in chat without building a Bookit adapter (Sprint 5 work).
+
+> **Important — `book_link` is `None` for every result (Sprint 5.1, 2026-05-18).**
+> We previously emitted `book_link = f"https://tripideas.nz/{slug}"`, but probing the live site confirmed that **accommodation pages are not published as standalone URLs** — every URL pattern 404s, and there's no accommodation sitemap. Until Douglas publishes accommodation pages, the chat surfaces `contact.website` (the operator's own site) as the actionable link instead. If accommodation pages are later published, the only required change is the one line in [`search_accommodation.py:305`](../../execution/tools/search_accommodation.py) — re-probe the URL pattern then.
 
 ## When to call it
 
@@ -75,7 +78,7 @@ All fields are optional. The chat orchestrator passes whatever subset matches th
       "facilities": ["Accessible Facilities", "..."],
       "contact": {"email": "...", "phone": "...", "website": "..."},
       "slug": "hampshire-holiday-parks-queenstown-lakeview-89136",
-      "book_link": "https://tripideas.nz/hampshire-holiday-parks-queenstown-lakeview-89136",
+      "book_link": null,            # always null in v1 — see note above; surface contact.website instead
       "distance_km": 0.4,           # populated only when near/region filter applied
       "score": 4.9,
       "match_reasons": ["within 0.4km of target", "4.2/5 from 39 guests", "4-star rated", "Gold Medal property"]
@@ -121,7 +124,7 @@ If the user asks for *"a motel in Picton"* and the type filter returns 0, **the 
 
 `bestPriceAvailable` is a **boolean flag** (probably "is best-price-available shown on the website?"), not a price number. The tool deliberately does not expose it as a price input/output.
 
-For real numeric pricing per date range, an actual Bookit API call is needed (Sprint 5). For v1, surface `book_link` to `tripideas.nz/<slug>` so the user can see live pricing on Tripideas's existing booking flow.
+For real numeric pricing per date range, an actual Bookit API call is needed (Sprint 5). For v1, the chat surfaces `contact.website` (the operator's own site) since accommodation pages aren't yet published on tripideas.nz — see the note at the top of this doc.
 
 ### 3. Accommodation has NO region/subRegion ref in Sanity
 

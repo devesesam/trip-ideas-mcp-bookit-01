@@ -77,9 +77,11 @@ class NearFilter:
 @dataclass
 class SearchPlacesInput:
     region: str                                    # REQUIRED — must match a region (or alias)
-    subRegion: Optional[str] = None
+    subRegion: Optional[str] = None                # legacy single-sub-region form (still accepted)
+    subRegions: list[str] = field(default_factory=list)  # multi-zone collapse: union of these
     themes: list[str] = field(default_factory=list)        # e.g. ["coastal", "scenic"]
     place_subtypes: list[str] = field(default_factory=list)  # e.g. ["beach", "walk"]
+    tags: list[str] = field(default_factory=list)            # exact Sanity tag names e.g. ["Freedom Camping"]
     physical_intensity_max: Optional[str] = None   # easy | moderate | demanding
     duration_bands: list[str] = field(default_factory=list)
     dog_friendly_required: bool = False
@@ -158,20 +160,35 @@ def search_places(
     if canonical_region != inp.region:
         normalization_notes.append(f"Region {inp.region!r} resolved to {canonical_region!r}")
 
-    # --- Translate themes/place_subtypes into tag-name OR-set for GROQ ---
-    required_any_tag_names = _theme_subtype_tags(inp.themes, inp.place_subtypes)
+    # --- Translate themes / place_subtypes into separate AND groups ---
+    # Critical: themes and subtypes are SEPARATE hard filters, not one OR-set.
+    # Pre-fix, both were merged into a single tag-name OR-set, so a page tagged
+    # `Coastal Walks` (theme tag) but with no museum tag still survived a query
+    # for place_subtypes=["museum"]. Each group now becomes its own AND clause
+    # in GROQ — a page must have at least one tag from each requested group.
+    theme_tag_group = sorted({t for th in inp.themes for t in THEME_TO_TAGS.get(th, [])})
+    subtype_tag_group = sorted({t for st in inp.place_subtypes
+                                for t in SUBTYPE_TO_TAGS.get(st, [])})
     if inp.themes or inp.place_subtypes:
         normalization_notes.append(
-            f"Filters {{themes={inp.themes}, place_subtypes={inp.place_subtypes}}} "
-            f"resolved to {len(required_any_tag_names)} candidate tag(s)"
+            f"Filters {{themes={inp.themes} -> {len(theme_tag_group)} tags, "
+            f"place_subtypes={inp.place_subtypes} -> {len(subtype_tag_group)} tags}}"
         )
+
+    # --- Coerce legacy single-string subRegion into the list form ---
+    # Both inp.subRegion and inp.subRegions can be set; we union them.
+    # The legacy field stays so older tool callers (build_day_itinerary,
+    # refine_itinerary) keep working without changes.
+    sub_region_list = sorted({s for s in [inp.subRegion, *inp.subRegions] if s})
 
     # --- Build the GROQ query ---
     candidates = _fetch_candidates(
         client=client,
         region_name=canonical_region,
-        subRegion=inp.subRegion,
-        any_tag_names=required_any_tag_names,
+        sub_regions=sub_region_list,
+        theme_tag_group=theme_tag_group,
+        subtype_tag_group=subtype_tag_group,
+        explicit_tag_group=sorted(set(inp.tags)),
         near=inp.near,
     )
     normalization_notes.append(f"GROQ pre-filter returned {len(candidates)} candidate docs")
@@ -222,11 +239,20 @@ def search_places(
             score += max(0.0, 1.0 - (distance_km / inp.near.radius_km)) * 1.0
             match_reasons.append(f"within {distance_km:.1f}km of target")
 
-        # Interests text (substring across description + attractions + local_tips)
+        # Interests text — substring across the page's title, aiMetadata title,
+        # description, attractions, local_tips, activities, and keywords.
+        # Page title MUST be in here so that name-based lookups like
+        # "Hamiltons Gap" or "Kaiaua" can find a page by its own name (those
+        # names won't appear in any other page's body).
         if inp.interests_text:
             interest_blob = " ".join([
-                ai.description, " ".join(ai.attractions),
-                " ".join(ai.local_tips), " ".join(ai.activities),
+                doc.get("title") or "",
+                ai.title or "",
+                ai.description,
+                " ".join(ai.attractions),
+                " ".join(ai.local_tips),
+                " ".join(ai.activities),
+                " ".join(ai.keywords),
             ]).lower()
             term = inp.interests_text.lower().strip()
             if term and term not in interest_blob:
@@ -242,16 +268,18 @@ def search_places(
         themes_derived = _derive_themes(tag_names)
         place_subtype_derived = _derive_place_subtype(tag_names)
 
-        # Soft scoring boosts: theme overlap, subtype match
+        # Soft scoring boosts: theme overlap (place_subtypes is now a hard
+        # GROQ filter; every surviving doc has a subtype tag, so no soft
+        # boost needed). Themes stay as a soft signal because users often
+        # care about "more coastal-ish" ranking even within a coastal result set.
         if inp.themes:
             theme_overlap = set(inp.themes) & set(themes_derived)
             if theme_overlap:
                 match_reasons.append(f"themes match: {sorted(theme_overlap)}")
                 score += 1.0 * len(theme_overlap)
-        if inp.place_subtypes:
-            if place_subtype_derived in inp.place_subtypes:
-                match_reasons.append(f"place_subtype: {place_subtype_derived}")
-                score += 1.5
+        if inp.place_subtypes and place_subtype_derived:
+            # Reason-only; the GROQ AND-clause already enforced the filter.
+            match_reasons.append(f"place_subtype: {place_subtype_derived}")
 
         # Region match always counted (passed GROQ already)
         match_reasons.insert(0, f"region: {canonical_region}")
@@ -289,7 +317,7 @@ def search_places(
 
     out = SearchPlacesOutput(
         ok=True,
-        query_echo=_query_echo(inp, required_any_tag_names),
+        query_echo=_query_echo(inp, theme_tag_group + subtype_tag_group + sorted(set(inp.tags))),
         count=len(enriched),
         results=top,
         facets=facets,
@@ -314,8 +342,10 @@ def _query_echo(inp: SearchPlacesInput, tag_names: list[str]) -> dict:
     return {
         "region": inp.region,
         "subRegion": inp.subRegion,
+        "subRegions": inp.subRegions,
         "themes": inp.themes,
         "place_subtypes": inp.place_subtypes,
+        "tags": inp.tags,
         "physical_intensity_max": inp.physical_intensity_max,
         "duration_bands": inp.duration_bands,
         "dog_friendly_required": inp.dog_friendly_required,
@@ -340,11 +370,21 @@ def _theme_subtype_tags(themes: list[str], place_subtypes: list[str]) -> list[st
 def _fetch_candidates(
     client: SanityClient,
     region_name: str,
-    subRegion: Optional[str],
-    any_tag_names: list[str],
+    sub_regions: list[str],
+    theme_tag_group: list[str],
+    subtype_tag_group: list[str],
+    explicit_tag_group: list[str],
     near: Optional[NearFilter],
 ) -> list[dict]:
-    """Build and execute the GROQ filter. Returns docs with aiMetadata payload."""
+    """Build and execute the GROQ filter. Returns docs with aiMetadata payload.
+
+    Tag groups are AND-of-ORs: a page must have at least one tag from each
+    non-empty group. So `themes=["coastal"], place_subtypes=["museum"]`
+    requires a coastal tag AND a museum tag — not "either-or".
+
+    `explicit_tag_group` is the user's direct `tags=[...]` input (e.g.
+    "Freedom Camping") — distinct from the derived theme/subtype groups.
+    """
     clauses = [
         '_type == "page"',
         "length(aiMetadata) > 10",
@@ -352,13 +392,25 @@ def _fetch_candidates(
     ]
     params: dict[str, Any] = {"region": region_name}
 
-    if subRegion:
-        clauses.append("subRegion->name == $subRegion")
-        params["subRegion"] = subRegion
+    if sub_regions:
+        clauses.append("subRegion->name in $sub_region_names")
+        params["sub_region_names"] = sub_regions
 
-    if any_tag_names:
-        clauses.append("count(tags[]->name[@ in $tag_names]) > 0")
-        params["tag_names"] = any_tag_names
+    # Tag intersection note: this GROQ version REQUIRES parens around
+    # `tags[]->name` before the `[@ in $arr]` filter. Without them
+    # (`count(tags[]->name[@ in $arr]) > 0`) the clause silently no-ops and
+    # matches every doc that has any tags at all. Confirmed via direct query:
+    # the bare form returned 347 for an Auckland+Museums filter where the
+    # correct count is 0; the parenthesised form returns the correct count.
+    if theme_tag_group:
+        clauses.append("count((tags[]->name)[@ in $theme_tag_names]) > 0")
+        params["theme_tag_names"] = theme_tag_group
+    if subtype_tag_group:
+        clauses.append("count((tags[]->name)[@ in $subtype_tag_names]) > 0")
+        params["subtype_tag_names"] = subtype_tag_group
+    if explicit_tag_group:
+        clauses.append("count((tags[]->name)[@ in $explicit_tag_names]) > 0")
+        params["explicit_tag_names"] = explicit_tag_group
 
     if near:
         # Bounding-box pre-filter; ~111 km per degree lat

@@ -8,7 +8,12 @@ No external Bookit API call needed.
 What this tool DOES NOT provide (Sprint 5 Bookit-API work):
 - Real-time availability for specific dates
 - Live numeric pricing (Sanity's `bestPriceAvailable` is a boolean flag, not a price)
-- Programmatic booking flow (we surface a `book_link` to tripideas.nz instead)
+- Programmatic booking flow. (We previously emitted a `book_link` to
+  tripideas.nz/<slug>, but accommodation pages aren't published as standalone
+  URLs on the live site — only places at /place/<slug> are. Probed 2026-05-18:
+  every URL variant 404s and no accommodation sitemap exists. Until Douglas
+  publishes accommodation pages we return `book_link=None` and surface the
+  operator's own website via the `contact.website` field instead.)
 
 Geographic anchoring: accommodation docs aren't tagged with our region/subRegion
 taxonomy, so region-based filtering goes through coordinate proximity:
@@ -118,7 +123,7 @@ class AccommodationResult:
 
     contact: dict                                # {email?, phone?, website?}
     slug: Optional[str]
-    book_link: Optional[str]                     # https://tripideas.nz/<slug> when slug exists
+    book_link: Optional[str]                     # None for now — accommodation pages aren't published on tripideas.nz; chat should link the operator's own website (contact.website) instead
 
     distance_km: Optional[float]                 # populated only when near/region filter applied
     score: float
@@ -302,7 +307,10 @@ def search_accommodation(
                 "website": d.get("website"),
             },
             slug=slug,
-            book_link=f"https://tripideas.nz/{slug}" if slug else None,
+            # Intentionally None — see module docstring. tripideas.nz/<slug>
+            # 404s for accommodation pages; the chat surfaces contact.website
+            # (the operator's own site) as the actionable link instead.
+            book_link=None,
             distance_km=distance_km,
             score=score,
             match_reasons=match_reasons,
