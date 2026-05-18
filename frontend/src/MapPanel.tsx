@@ -33,8 +33,9 @@ import type {
   Geometry,
   Point,
 } from "geojson";
-import { Map as MapIcon, Loader2 } from "lucide-react";
+import { ExternalLink, Map as MapIcon, Loader2 } from "lucide-react";
 import { useChatContext } from "./ChatContext";
+import { buildGoogleMapsRouteUrl } from "./map/googleMapsUrl";
 import "leaflet/dist/leaflet.css";
 
 
@@ -197,6 +198,12 @@ export function MapPanel({ className = "" }: MapPanelProps) {
   const route = latestRoute as FeatureCollection<Geometry, GeoProps> | null;
   const hasRoute = !!route && Array.isArray(route.features) && route.features.length > 0;
 
+  // Google Maps export URL. Null when there aren't enough points to route.
+  const googleMapsUrl = useMemo(
+    () => buildGoogleMapsRouteUrl(route),
+    [route],
+  );
+
   // Memoize the keyed GeoJSON layer so a new routeId remounts cleanly
   // (rather than diff-patching old features under new ones).
   const geojsonLayer = useMemo(() => {
@@ -231,12 +238,34 @@ export function MapPanel({ className = "" }: MapPanelProps) {
         <FitBoundsOnRoute route={route} routeId={latestRouteId} />
       </MapContainer>
 
+      {/* Open in Google Maps — top-right overlay, only when a route is visible */}
+      {hasRoute && googleMapsUrl && !isBuildingItinerary && (
+        <GoogleMapsExportButton href={googleMapsUrl} />
+      )}
+
       {/* Empty state — overlay when no route */}
       {!hasRoute && !isBuildingItinerary && <EmptyOverlay />}
 
       {/* Loading overlay — when a build_* tool is currently running */}
       {isBuildingItinerary && <BuildingOverlay hasExistingRoute={hasRoute} />}
     </div>
+  );
+}
+
+
+function GoogleMapsExportButton({ href }: { href: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="absolute top-3 right-3 z-[500] inline-flex items-center gap-1.5 rounded-bubble border border-brand-border bg-brand-surface/95 px-3 py-2 text-xs font-medium text-brand-text shadow-sm backdrop-blur transition hover:bg-brand-surface hover:shadow"
+      title="Open this route in Google Maps to get turn-by-turn directions"
+      aria-label="Open route in Google Maps"
+    >
+      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+      Open in Google Maps
+    </a>
   );
 }
 
