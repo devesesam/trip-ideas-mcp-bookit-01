@@ -1,0 +1,384 @@
+Convo 1
+
+Where can I get good coffee in Wellington?
+That's a great city for coffee lovers! However, my tools are focused on places to visit (walks, beaches, lookouts, attractions) and places to stay in New Zealand — I don't have café or restaurant listings in the Tripideas database.
+
+For Wellington coffee spots, I'd suggest:
+
+Google Maps — search "best coffee Wellington" for rated and reviewed cafés
+Zomato / Yelp — good for filtering by neighbourhood
+Wellingtonista (wellingtonista.com) — local guides often cover the café scene
+What I can help you with is planning a great day out in Wellington around the coffee stops — things like waterfront walks, Te Papa, the botanical gardens, lookouts, and more. Want me to put together a day plan? ☕
+
+---
+
+Convo 2
+
+What can I do at Hobbiton?
+✓ find_place_by_name → 0 matches(0.1s)
+Hobbiton doesn't appear to have a dedicated page in the Tripideas content library at the moment, so I can't give you verified details from our editorial content.
+
+What I can tell you from general knowledge is that Hobbiton Movie Set (near Matamata in Waikato) offers guided tours of the original Lord of the Rings and Hobbit film sets — you can walk through Hobbit holes, visit the Green Dragon Inn, and explore the Shire landscape. For accurate pricing, tour times, and bookings I'd recommend heading directly to hobbitontours.com.
+
+If you're planning a trip to the Waikato region, I can search for other great things to do nearby or help you build a day itinerary around Matamata — would that be helpful?
+
+---
+
+Convo 3
+
+Tell me about Te Papa
+✓ find_place_by_name → 1 matches(0.1s)
+✓ get_place_summary → 'Te Papa Tongarewa Museum of New Zealand'(0.1s)
+Te Papa Tongarewa Museum of New Zealand is New Zealand's national museum, right on the Wellington waterfront in Central Wellington. It's one of the country's must-visit cultural landmarks.
+
+Highlights
+Treaty of Waitangi exhibition — explore the founding document of modern Aotearoa
+Gallipoli exhibition (by Weta Workshop) — an extraordinarily immersive WWI experience
+Rongomaraeroa marae — a living, contemporary Māori meeting place inside the museum
+Māori artworks and carvings, plus New Zealand natural history displays
+Good to know
+Hours: Open daily 10am–6pm (closed Christmas Day)
+Getting there: 20-minute walk along the waterfront from Wellington's central train station
+Tip: Allow at least 2 hours — you could easily spend a full day here
+Great for first-time visitors to NZ, Māori culture enthusiasts, history lovers, and families
+Cafes, a gift shop, and guided tours available on-site; some exhibitions are paid
+Pair it with
+After Te Papa, locals recommend strolling along the waterfront to Oriental Bay or heading up Mount Victoria for panoramic views — making for a fantastic full-day Wellington itinerary.
+
+Would you like me to build a full day plan around Te Papa in Wellington?
+
+---
+
+Convo 4
+
+Day in Auckland CBD
+✓ build_day_itinerary → 3 places at Central Auckland(0.6s)
+Putting together a balanced day in Central Auckland — one second…Here's a great day out in Central Auckland — a nice mix of coastal, urban, and nature:
+
+🌅 9:00 – 10:30 | Judges Bay (Parnell / Judges Bay) Start the morning at this hidden gem near the CBD — a golden sandy beach perfect for a swim at high tide, surrounded by reserves and scenic paths. Historic St Stephen's Chapel is nearby too.
+
+🚴 10:30 – 11:45 | Lightpath Te Ara i Whiti (Downtown Auckland) Head into the city for Auckland's iconic hot-pink cycleway. Great for a stroll or ride, with public art, LED lighting, and unique city views. Connects easily to the wider CBD.
+
+🌳 11:45 – 13:00 | Giant Pōhutukawa (Parnell) Back to Parnell's Dove-Myer Robinson Park to visit the largest pōhutukawa in Auckland — a truly impressive piece of living history.
+
+🍽 13:00 – 14:00 | Lunch in Parnell Parnell Village has a great café and dining scene — plenty of good spots to refuel on the main strip.
+
+A few tips:
+
+Judges Bay and the Giant Pōhutukawa are both in Parnell — very walkable between them.
+The Lightpath is free and can be walked if you don't have a bike (it's about 1 km).
+This plan wraps by 2pm, leaving your afternoon free.
+Want me to extend the afternoon, swap any of these stops, or adjust the pace? I can also look up accommodation if you need somewhere to stay. 😊
+
+---
+
+Convo 5
+
+Things to do downtown Christchurch
+✓ search_places → 26 matches(1.3s)
+Great news — there are 26 places listed for Christchurch city. Here are the highlights:
+
+Right in the city centre:
+
+Cathedral Square — the historic heart of the city, with the iconic ChristChurch Cathedral, public art, and monuments. Great starting point for any day.
+Avon River / Ōtākaro — stroll, cycle, punt, or kayak along this scenic river winding through the city, past Hagley Park and the Botanic Gardens.
+Christchurch Botanic Gardens — stunning gardens with exotic and native plants, conservatories, and playgrounds right in the CBD.
+Margaret Mahy Family Playground — the largest playground in the Southern Hemisphere, on the Avon riverbank. Great for families.
+A little further out but very accessible:
+
+Avonside Red Zone — the former residential suburb transformed into green walking and cycling spaces after the earthquakes. A fascinating piece of Christchurch's story.
+Riccarton Bush — a quick, easy 40-min walk through ancient kahikatea forest (Pūtaringamotu) in suburban Christchurch.
+Port Hills & surrounds:
+
+Sign of the Kiwi — a historic 1916 rest-house and café on the Port Hills with great views and walking track access.
+John Jameson Lookout — panoramic views over Whakaraupō / Lyttelton Harbour from Summit Road.
+Cass Bay — sheltered bay with beaches, picnic areas, and a coastal walk near Lyttelton.
+There are 26 places in total in the dataset — want me to build you a full day itinerary based in Christchurch city? Just let me know if you're travelling solo, as a couple, or with family, and I'll put it together!
+
+---
+
+Convo 6
+
+Weekend in central Otago
+✓ search_places → 52 matches(1.3s)
+Central Otago is a brilliant choice — 52 places in the content library spanning gold-rush heritage, dramatic tussock landscapes, wine, cycling, and dark skies. Here's a flavour of what's on offer:
+
+Highlights from the data:
+
+🚶 Alexandra Millennium Track — easy 11.5 km riverside walk/bike connecting Alexandra and Clyde, past gold mining relics
+🏛️ Clyde — charming historic town on Lake Dunstan, hub for the Rail Trail and Millennium Track
+🚗 Old Dunstan Road — remote scenic drive through highland tussock, retracing the 1860s gold rush route
+⛏️ Macraes Goldmine — public viewpoint over NZ's largest working open-pit goldmine
+🌊 Lowburn — lakeside picnic spot on Lake Dunstan with vineyard views and a short walk
+🏔️ Ōmakau — quaint Rail Trail town known for dark sky viewing
+The dominant themes are heritage, scenic, and alpine — perfect for a relaxed but interesting weekend.
+
+A couple of quick questions to sharpen the plan:
+
+Where are you based / arriving from? (Alexandra, Cromwell, and Clyde are all great hubs)
+Travelling solo, as a couple, or with family/group?
+Any priorities — cycling, wine, history, walking, or a bit of everything?
+Once I know that, I'll build you a tailored 2-day itinerary! 🍇🌄
+
+---
+
+Convo 7
+
+Day exploring Auckland — CBD plus a ferry to Devonport
+✓ build_day_itinerary → 3 places at Central Auckland(0.4s)
+✓ search_places → 8 matches(1.5s)
+Putting together a full Auckland day covering the CBD and a Devonport ferry trip — give me a moment…Now let me pull in Devonport specifically to round out the afternoon:Here's a great full day that weaves together the CBD and Devonport:
+
+🌊 Auckland CBD + Devonport Day
+Morning — CBD & Waterfront
+9:00–10:15 — Tamaki Drive (~75 min) Start with a stroll or cycle along this iconic 9.6 km coastal route hugging the Waitematā Harbour. Great views from the get-go — Mission Bay and Ōrākei are highlights along the way.
+
+10:15–11:30 — Downtown Auckland (~75 min) Head back into the heart of the city. The Sky Tower, harbourside walks, and the historic waterfront precinct are all on your doorstep.
+
+11:30–12:45 — Britomart (~75 min) This beautifully restored heritage precinct is the city's transport hub and one of its most atmospheric walking areas — great architecture, boutique shopping, and easy access to the ferry terminal right next door.
+
+🍽️ Lunch — 12:45–13:45
+Britomart has plenty of excellent cafés and eateries in the precinct itself — grab a bite before boarding the ferry.
+
+Afternoon — Devonport Ferry
+13:45 — Devonport Ferry 🛳️ Ferries run every 30 minutes from the Downtown Ferry Terminal (a short walk from Britomart). The 12-minute crossing gives you lovely views of the Waitematā and the city skyline.
+
+On the other side, pick one or two:
+
+🏔️ Takarunga Mt Victoria — An easy climb up an extinct volcano with panoramic views of Auckland, the Hauraki Gulf, and the Waitematā. Steeped in Māori and military history. (≤1 hr)
+🚶 Torpedo Bay / Devonport Coastal Walk — Victorian architecture, inner-city beaches, and the Tainui Waka Monument. Easy and very scenic.
+⚓ The Devonport village itself is lovely for a wander — heritage buildings, indie bookshops, and good coffee.
+~17:00 — Ferry back to the city Catch the return sailing as the afternoon light hits the harbour — one of Auckland's best views.
+
+Tips:
+
+The AT HOP card covers both the ferry and any buses on the day — grab one from Britomart if you don't have one.
+Takarunga Mt Victoria is dog-friendly on-leash, if you're bringing a four-legged friend.
+The whole day is very walkable — no car needed.
+Want me to add accommodation recommendations near the CBD, or adjust the pace (more relaxed, or pack in more stops)?
+
+---
+
+Convo 8
+
+Coastal day around Akaroa
+✓ search_places → 15 matches(1.4s)
+Great selection across Banks Peninsula. Here's what's on Tripideas for a coastal day around Akaroa:
+
+Right in / near Akaroa:
+
+Lighthouse Road, Akaroa — Scenic drive from the township out to Akaroa Head, with harbour views, volcanic landscapes, native bush, and access to walking tracks. Dogs on leash welcome.
+Ōtepātotu Track — A moderate hike through ancient forest with nearly 360° summit views and rich Māori legend. (No dogs.)
+Other bays worth exploring (30–60 min drive from Akaroa):
+
+Le Bons Bay — Quiet, wide sandy beach ideal for a swim and a wander. Seasonal dog access.
+Okains Bay — Safe swimming beach with a Māori & colonial museum, playground, and campground. Great for families.
+Wider Banks Peninsula (if you want to extend):
+
+Port Levy — Stunning harbour scenery and Mt Herbert walks.
+Lyttelton — Historic harbour town with the Bridle Path hike and weekend markets (1–2 hrs from Akaroa).
+Would you like me to build a full day itinerary based in Akaroa — slotting these into a logical order with drive times? Just let me know your pace (relaxed, balanced, or packed) and whether you're travelling solo, as a couple, or with family.
+
+---
+
+Convo 9
+
+Day around Russell, Bay of Islands
+✓ build_day_itinerary → 3 places at Russell(0.3s)
+Putting together a balanced day around Russell — one second…Here's a lovely day around Russell and the Bay of Islands:
+
+Day Around Russell — Bay of Islands
+
+9:00 am – 10:15 am | Russell (walk, ~75 min) Start your morning exploring Russell itself — NZ's first European settlement. Wander the waterfront, check out the heritage buildings, and soak up the charm of this compact historic town.
+
+10:15 am → short 5-min drive across to the Waitangi side
+
+10:20 am – 11:35 am | Te Ti Bay (beach, ~75 min) A tranquil golden-sand beach between Paihia and Waitangi, sheltered and great for a swim. Lovely views out to Motumaire Island — a real gem that most visitors rush past.
+
+11:35 am – 12:50 pm | Paihia (walk/explore, ~75 min) Stroll Paihia's waterfront and check out what's on the water. It's the hub for boat trips, dolphin cruises, and the gateway to Waitangi Treaty Grounds if you want to add a heritage stop.
+
+12:50 pm – 1:50 pm | Lunch 🍽️ Paihia has a good handful of cafés and waterfront spots — head along the main strip and take your pick. (Restaurant listings aren't indexed yet, so we can't pin a specific one.)
+
+A few tweaks I can make:
+
+Want to include Waitangi Treaty Grounds as a dedicated stop?
+Prefer more beaches/walks and less town-exploring?
+Travelling with kids, or keen on anything specific like kayaking or snorkelling?
+Just say the word and I'll refine it!
+
+---
+
+Convo 10
+
+Trip from Picton to Christchurch over 4 days
+✓ build_trip_itinerary → 4 days, 12 places total(2s)
+Putting together a 4-day road trip from Picton to Christchurch — give me a moment…Here's your 4-day Picton → Christchurch road trip! 🚗
+
+🗺️ Day 1 — Picton & Marlborough Sounds
+Base: Picton / Marlborough Sounds
+
+Time	Stop
+9:00–10:15	Wairau Valley — scenic drive through Marlborough's famous wine valley
+10:28–11:58	Wairau Bar and SS Kennedy Wreck — wild coastal walk with a historic shipwreck
+12:15–13:30	Port Underwood Road — rugged scenic drive from Rārangi to Picton with stunning Sounds views
+13:30	Lunch near the Sounds (plenty of cafés in Picton township)
+🍇 Day 2 — Marlborough Sounds Exploration
+Base: Blenheim → Port Underwood
+
+Time	Stop
+9:05–10:20	Wairau Affray (Tuamarina) — NZ's first colonial conflict site, rich in Māori and European history
+10:44–11:59	Tom Canes Bay (Port Underwood) — pretty sandy beach with colourful stones & historic whaling heritage
+11:59–13:14	Oyster Bay and Hakahaka Bay — marine farms, kayaking, Māori heritage and clifftop views
+13:14	Lunch around Oyster Bay / Picton area
+🚗 Overnight drive to Kaikōura (~2.5 hrs) — or break the journey and overnight in Blenheim.
+
+🐳 Day 3 — Kaikōura Coast
+Base: Kaikōura (~2.5 hr drive from Blenheim)
+
+Time	Stop
+9:00–10:15	Kaikōura — explore the town, learn about its Māori heritage and whale-watching scene
+10:15–11:30	Kaikōura Peninsula Walkway — easy clifftop walk with seal colonies and seabird nurseries
+11:30–12:45	Lower Kaikōura Peninsula Walkway — post-2016 earthquake rock platform with the main seal colony
+12:45	Lunch in Kaikōura town — great seafood options on the main street
+🚗 Overnight in Kaikōura, then ~2.5 hrs south to Christchurch.
+
+🌿 Day 4 — Christchurch Arrival & Explore
+Base: Central Christchurch
+
+Time	Stop
+9:00–10:15	Christchurch Botanic Gardens — heritage gardens with conservatories, river walks and playgrounds
+10:15–11:30	Arts Centre Te Matatiki Toi Ora — NZ's largest collection of category-1 heritage buildings, galleries & markets
+11:30–12:45	Ravenscar House Museum — stunning modern museum showcasing NZ art in a beautiful Wakefield collection
+12:45	Lunch in central Christchurch — the precinct around the Arts Centre has great café options
+📊 Trip Stats
+12 places across 4 days
+Themes covered: coastal, heritage, wildlife, scenic, cultural, alpine
+Longest inter-day drive: ~2.5 hrs (Oyster Bay → Kaikōura)
+Would you like me to find accommodation along the route (e.g. Blenheim, Kaikōura), adjust the pace, or add more adventure/wildlife stops?
+
+---
+
+Convo 11
+
+Plan a day at Pūrākaunui Falls
+✓ find_place_by_name → 1 matches(0.1s)
+✓ get_place_summary → 'Pūrākaunui Falls'(0.1s)
+✓ build_day_itinerary → 0 places at Queenstown Lakes(0.4s)
+✓ search_places → 23 matches(1.6s)
+Great find — Pūrākaunui Falls is one of the Catlins' most iconic spots. The falls themselves are a quick visit, so let me build a full day around the area anchored there.
+
+Putting together a day in the Catlins centred on Pūrākaunui Falls — give me a moment…Here's a lovely full day centred on Pūrākaunui Falls and the surrounding Catlins — one of New Zealand's most spectacular (and underrated) regions. The falls are a quick visit, so I've woven in nearby gems along the Southern Scenic Route.
+
+🌿 A Day at Pūrākaunui Falls — The Catlins
+Base: Owaka (the main service town, 15 km away) | Drive style: Southern Scenic Route
+
+🕘 9:00 am — Pūrākaunui Falls
+Kick off early before the crowds arrive. The 20-minute rainforest walk winds through lush bush to a gorgeous three-tiered, 20-metre waterfall — one of the most photographed in New Zealand. There's a wheelchair-accessible top viewing platform, a lower platform via stairs, and picnic tables at the car park.
+
+📸 Tip: Visit after recent rain for the most dramatic flow. Check kōtukutuku flowering August–December for a bonus flora display.
+🕙 10:00 am — Pūrākaunui Bay
+Just a short drive from the falls, this wild, remote bay has dramatic cliffs, a 500-metre beach, and excellent wildlife spotting. Great for a stroll along the shore and some seal-watching.
+
+🕚 11:00 am — Helena Falls Beach
+A hidden gem — a secluded golden-sand beach with its own waterfall tumbling nearby. Keep an eye out for yellow-eyed penguins, fur seals, and sea lions. Short walk from the parking area.
+
+🕛 12:30 pm — Lunch in Owaka
+Owaka is the Catlins' main hub — grab lunch here. It has a café and bakery for a quick refuel. (Restaurant content isn't indexed in full detail yet, but Owaka's main street is your best option in the area.)
+
+🕑 2:00 pm — Catlins Lake & Pounawea
+Head to the Catlins River estuary near Pounawea — a peaceful bird sanctuary with walking tracks, fishing spots, and stunning reflective water views. Perfect for a post-lunch wander.
+
+🕒 3:30 pm — Cannibal Bay
+A dramatic remote beach with golden sands and reliably excellent sea lion sightings. Keep your distance from the wildlife and soak up the raw, untouched coastal scenery.
+
+🕓 5:00 pm — Wrap up / head to accommodation
+Return to Owaka or continue along the Southern Scenic Route toward Balclutha or Invercargill.
+
+Key tips for the day:
+
+🚗 Self-drive essential — no public transport in the Catlins
+🐕 Dogs: allowed on leash at some spots, not all — check each location
+📅 Best seasons: April–May for autumn colour; any time after rainfall for the falls
+⏱️ Total driving between stops is minimal (all within ~30–40 km)
+Would you like me to find accommodation in the Catlins for the night, or add more detail on any of these stops?
+
+---
+
+Convo 12
+
+Tell me about Whakarewarewa
+✓ find_place_by_name → 1 matches(0.1s)
+✓ get_place_summary → 'Whakarewarewa Forest and Scion'(0.1s)
+Here's what Tripideas has on Whakarewarewa Forest and Scion — a fantastic green escape just 5 minutes from Rotorua city centre:
+
+🌲 Whakarewarewa Forest and Scion
+Location: Rotorua, Bay of Plenty
+
+A beloved outdoor destination established in the late 1800s to trial exotic tree species for New Zealand's forestry industry. Today it's one of the country's most popular multi-use forests, home to towering redwoods, sequoias, and Monterey pines.
+
+Highlights:
+
+Redwood Memorial Grove — stunning stands of giant coastal redwoods
+Redwoods Treewalk — a famous elevated walkway through the redwood canopy
+Scion Research Institute — photo galleries and educational exhibits on NZ forestry history, plus a café
+Redwoods Visitor Centre — barista coffee, snacks, maps, gift shop; open daily (except Christmas)
+Activities:
+
+Walking, running, mountain biking, horse trekking
+Exploring Scion's exhibits
+Good to know:
+
+Dogs are not allowed (registered service dogs need advance notice for the Treewalk)
+Gates open from 5:30am to late at the main entry; walk/bike access is available anytime
+Accessible by City Ride bus (route 3 Owhata) or a short drive from the city
+You can find the full page here: Whakarewarewa Forest and Scion
+
+Want me to build a day plan around Rotorua that includes the forest?
+
+---
+
+Convo 13
+
+Weekend in central Otago
+✓ search_places → 52 matches(1.3s)
+Central Otago is a brilliant choice — 52 places in the content library spanning gold-rush heritage, dramatic tussock landscapes, wine, cycling, and dark skies. Here's a flavour of what's on offer:
+
+Highlights from the data:
+
+🚶 Alexandra Millennium Track — easy 11.5 km riverside walk/bike connecting Alexandra and Clyde, past gold mining relics
+🏛️ Clyde — charming historic town on Lake Dunstan, hub for the Rail Trail and Millennium Track
+🚗 Old Dunstan Road — remote scenic drive through highland tussock, retracing the 1860s gold rush route
+⛏️ Macraes Goldmine — public viewpoint over NZ's largest working open-pit goldmine
+🌊 Lowburn — lakeside picnic spot on Lake Dunstan with vineyard views and a short walk
+🏔️ Ōmakau — quaint Rail Trail town known for dark sky viewing
+The dominant themes are heritage, scenic, and alpine — perfect for a relaxed but interesting weekend.
+
+A couple of quick questions to sharpen the plan:
+
+Where are you based / arriving from? (Alexandra, Cromwell, and Clyde are all great hubs)
+Travelling solo, as a couple, or with family/group?
+Any priorities — cycling, wine, history, walking, or a bit of everything?
+Once I know that, I'll build you a tailored 2-day itinerary! 🍇🌄
+
+Make it more relaxed
+✓ build_trip_itinerary → 2 days, 4 places total(1s)
+Putting together a relaxed 2-day Central Otago weekend — give me a moment…Here's your relaxed Central Otago weekend — easy-paced, scenic, and light on driving. 🌿
+
+🗓️ Day 1 — Clyde & surrounds
+Base: Clyde
+
+9:00–10:15 🚶 Alexandra Millennium Track — A gentle stroll along 11.5 km of riverside trail connecting Clyde and Alexandra, with old gold-mining relics dotted along the way. Easy grade, no rush.
+10:15 → 10:26 🚗 Short drive (8 km, ~11 min) west into the highlands
+10:26–11:41 🚗 Hawksburn Road — A slow, scenic drive through remote highland tussock country. Just roll the windows down and take in the rugged Central Otago landscape.
+11:41–12:41 🍽️ Lunch — Head back into Clyde; the village has a handful of lovely cafés to settle into for a leisurely break.
+Afternoon free — Wander Clyde's heritage precinct, browse the art galleries, or find a sunny spot by Lake Dunstan.
+🗓️ Day 2 — Alexandra & the Old Man Range foothills
+Base: Alexandra
+
+9:08–10:38 🚶 Conroys Gully — A looped walking track through dry hills and river terraces just outside Alexandra, passing a historic dam and gold-mining sites. Peaceful and unhurried.
+10:49–12:04 🚶 Mitchells Cottage — A beautifully preserved 1800s schist homestead on the edge of the Old Man Range / Kōpūwai, with a short interpretive track and remarkable dry-stone masonry.
+12:04–13:04 🍽️ Lunch — Back into Alexandra for a café stop.
+Afternoon free — Nothing booked; take it at your own pace. Cromwell's lakeside foreshore (20 min drive) is a lovely way to wind down the weekend.
+Total driving between stops: under 30 minutes per day — very manageable.
+
+Would you like help finding somewhere to stay in the area, or want more detail on any of these spots?
