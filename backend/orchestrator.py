@@ -368,17 +368,23 @@ def _calc_cost(model: str, input_tokens: int, output_tokens: int) -> float:
     return (input_tokens / 1_000_000) * pricing["input"] + (output_tokens / 1_000_000) * pricing["output"]
 
 
-_GEOJSON_TOOLS = {"build_day_itinerary", "build_trip_itinerary", "refine_itinerary"}
+_GEOJSON_TOOLS = {
+    "build_day_itinerary",
+    "build_trip_itinerary",
+    "refine_itinerary",
+    "render_places_on_map",
+}
 
 
 def _extract_route_geojson(name: str, result: dict) -> Optional[dict]:
-    """Pull the route_geojson FeatureCollection out of an itinerary tool result.
+    """Pull the route_geojson FeatureCollection out of a tool result.
 
     Path varies by tool — DayPlan owns the field for day/refine, BuildTripOutput
-    owns it directly for trips:
-    - build_day_itinerary:  result["day_plan"]["route_geojson"]
-    - refine_itinerary:     result["updated_plan"]["route_geojson"]
-    - build_trip_itinerary: result["route_geojson"]   (trip-wide aggregation)
+    owns it directly for trips, render_places_on_map owns it directly too:
+    - build_day_itinerary:    result["day_plan"]["route_geojson"]
+    - refine_itinerary:       result["updated_plan"]["route_geojson"]
+    - build_trip_itinerary:   result["route_geojson"]   (trip-wide aggregation)
+    - render_places_on_map:   result["route_geojson"]   (points-only)
 
     Returns None for any tool that doesn't produce a route or whose result
     didn't include one (e.g. errors, empty plans).
@@ -391,7 +397,7 @@ def _extract_route_geojson(name: str, result: dict) -> Optional[dict]:
     elif name == "refine_itinerary":
         plan = result.get("updated_plan") or {}
         fc = plan.get("route_geojson") if isinstance(plan, dict) else None
-    else:  # build_trip_itinerary
+    else:  # build_trip_itinerary, render_places_on_map
         fc = result.get("route_geojson")
     if not isinstance(fc, dict) or not fc.get("features"):
         return None
@@ -427,6 +433,10 @@ def _summarize_tool_result(name: str, result: dict) -> str:
     if name == "list_subregions":
         subs = result.get("subRegions") or []
         return f"list_subregions({result.get('region', '?')}) → {len(subs)} sub-regions, {result.get('total_places', 0)} places"
+    if name == "render_places_on_map":
+        missing = len(result.get("missing_ids") or [])
+        suffix = f", {missing} unmappable" if missing else ""
+        return f"render_places_on_map → {result.get('count', 0)} pins{suffix}"
     return f"{name} → ok"
 
 
