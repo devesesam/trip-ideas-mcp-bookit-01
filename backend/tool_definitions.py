@@ -37,6 +37,9 @@ from tools.find_place_by_name import (  # noqa: E402
 from tools.get_place_summary import get_place_summary  # noqa: E402
 from tools.list_subregions import list_subregions  # noqa: E402
 from tools.refine_itinerary import RefineInput, refine_itinerary  # noqa: E402
+from tools.render_places_on_map import (  # noqa: E402
+    RenderPlacesOnMapInput, render_places_on_map,
+)
 from tools.search_accommodation import (  # noqa: E402
     NearFilter as AccomNearFilter,
     SearchAccommodationInput,
@@ -429,14 +432,23 @@ FIND_PLACE_BY_NAME_SCHEMA = {
         "to confirm a page exists before referring to it. Unlike search_places, "
         "this also finds pages with thin/no aiMetadata — check the "
         "`has_aimetadata` flag on each result before following up with "
-        "get_place_summary."
+        "get_place_summary.\n\n"
+        "Tolerates minor misspellings: if exact/substring matching finds "
+        "nothing, falls back to fuzzy matching (rapidfuzz). Each result "
+        "carries a `match_rank`: 'exact'/'prefix'/'substring' are verified "
+        "Sanity hits; 'fuzzy' (score ≥ 80) is a confident spelling-tolerant "
+        "match — proceed but mention the correction; 'fuzzy_no_match' returns "
+        "up to 3 best-guess near-misses with `fuzzy_score` and means NOTHING "
+        "cleared the confidence threshold — treat these as candidates to "
+        "confirm with the user ('Did you mean Sandymount?'), NOT as verified "
+        "hits, and do not call get_place_summary on them without confirmation."
     ),
     "input_schema": {
         "type": "object",
         "properties": {
             "name": {
                 "type": "string",
-                "description": "Substring to match against page titles and slugs. Case-insensitive.",
+                "description": "Place name to look up. Case-insensitive; tolerates minor misspellings via a fuzzy fallback.",
             },
             "region": {
                 "type": "string",
@@ -447,6 +459,40 @@ FIND_PLACE_BY_NAME_SCHEMA = {
             },
         },
         "required": ["name"],
+    },
+}
+
+
+RENDER_PLACES_ON_MAP_SCHEMA = {
+    "name": "render_places_on_map",
+    "description": (
+        "Draw a set of places on the map panel next to the chat. Use this "
+        "whenever the user asks to 'show on a map', 'put these on the map', "
+        "'where are they?', etc. — for places they've named or that came from "
+        "a prior tool result, WITHOUT needing a full timed itinerary. Renders "
+        "as pins only (no route line). The map auto-fits to the bounds of the "
+        "places you pass.\n\n"
+        "Use the sanity_doc_id of each place — get IDs from prior "
+        "search_places, find_place_by_name, get_place_summary, or itinerary "
+        "tool results. Do NOT invent IDs.\n\n"
+        "If the user wants a planned route with times and drive segments, use "
+        "build_day_itinerary instead — that draws a routed polyline."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "sanity_doc_ids": {
+                "type": "array",
+                "items": {"type": "string"},
+                "minItems": 1,
+                "description": "One or more sanity_doc_id values from prior tool results.",
+            },
+            "title": {
+                "type": "string",
+                "description": "Optional caption for what's being shown (e.g. 'Coastal walks shortlist'). Logged only.",
+            },
+        },
+        "required": ["sanity_doc_ids"],
     },
 }
 
@@ -502,6 +548,7 @@ TOOLS = [
     SEARCH_ACCOMMODATION_SCHEMA,
     FIND_PLACE_BY_NAME_SCHEMA,
     LIST_SUBREGIONS_SCHEMA,
+    RENDER_PLACES_ON_MAP_SCHEMA,
     WEB_SEARCH_SCHEMA,
 ]
 
@@ -548,6 +595,14 @@ def dispatch_tool(name: str, args: dict, client: SanityClient | None = None) -> 
             )
         elif name == "list_subregions":
             out = list_subregions(args["region"], client=client)
+        elif name == "render_places_on_map":
+            out = render_places_on_map(
+                RenderPlacesOnMapInput(
+                    sanity_doc_ids=list(args.get("sanity_doc_ids") or []),
+                    title=args.get("title"),
+                ),
+                client=client,
+            )
         else:
             return {"ok": False, "error_code": "UNKNOWN_TOOL",
                     "message": f"No tool named {name!r}"}

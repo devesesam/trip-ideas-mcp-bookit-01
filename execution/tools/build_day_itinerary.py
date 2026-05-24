@@ -419,8 +419,24 @@ def _hhmm_to_min(s: str) -> int:
     return int(h) * 60 + int(m)
 
 
-def _min_to_hhmm(m: int) -> str:
-    h, mm = divmod(int(round(m)), 60)
+def _min_to_hhmm(m: int, round_to: int = 5) -> str:
+    """Format minutes-from-midnight as HH:MM, rounded to nearest `round_to` minutes.
+
+    Default 5-minute granularity matches how humans actually describe schedules
+    ("11:15" not "11:12"). Internal arithmetic remains exact — only the
+    displayed start/end strings are rounded. `duration_minutes` on slots is
+    still the precise integer value, so totals don't drift.
+
+    Pass `round_to=1` for legacy minute-exact output (e.g. tests that assert a
+    specific value derived from raw inputs).
+    """
+    raw = int(round(m))
+    if round_to and round_to > 1:
+        raw = int(round(raw / round_to)) * round_to
+    h, mm = divmod(raw, 60)
+    # Carry into next hour if rounding pushed us to :60
+    if mm == 60:
+        h, mm = h + 1, 0
     return f"{h:02d}:{mm:02d}"
 
 
