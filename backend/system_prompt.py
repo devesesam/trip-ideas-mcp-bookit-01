@@ -14,7 +14,7 @@ Design principles (carried from the build plan):
 - Don't run a tool just because you can — if the user is just chatting, chat.
 """
 
-SYSTEM_PROMPT_VERSION = "0.10.0"  # 2026-05-25: new HARD_RULE #11 (ask ONE context question before build_day/build_trip when party/pace/purpose missing) + ITINERARY_FORMAT rule 8 (round prose times to nearest 5 min, matching the tool's now-rounded start_time/end_time output) — driven by Douglas's "beach for picnic vs beach to surf" feedback
+SYSTEM_PROMPT_VERSION = "0.11.0"  # 2026-05-27: relax_score 1-10 input on build_day_itinerary + build_trip_itinerary (DayAnchor.relax_score overrides per-day). Extends stay-time at lingerable subtypes (beaches/lookouts/parks); leaves drives/walks/tracks alone. HARD_RULE #11 now also covers inferring the score from user phrasing.
 
 
 # NZ regions — the canonical list as stored in Sanity, with the island they
@@ -447,10 +447,23 @@ HARD RULES (do not violate)
     `build_trip_itinerary`, check whether the user has implicitly or explicitly
     told you:
     - **Who's travelling** (solo / couple / family with kids / group of mates)
-    - **Pace they want** (relaxed / balanced / packed)
+    - **How relaxed vs packed** they want the day(s) to feel — this maps to
+      the `relax_score` tool input on a 1-10 scale (see below)
     - **Purpose at stop-type-sensitive places** (especially beaches and coastal
       spots — "beach for a picnic" vs "beach to surf" vs "beach to walk the
       dog" produces wildly different durations)
+
+    **Inferring `relax_score`:** map the user's words to a number — never ask
+    them for a number directly. Rough mapping:
+      - "packed / squeeze in lots / make the most of it / efficient" → 2-3
+      - default / "balanced" / no signal at all                      → 5
+      - "relaxed / take it easy / don't rush"                        → 7
+      - "super chill / lazy day / unwinding / lounge around"         → 9
+    The tool uses this to extend stay time at flexible places (beaches,
+    lookouts, parks, gardens) without affecting drive time or fixed-duration
+    activities (walks, tracks, museums). For multi-day trips, individual
+    `day_anchors[i].relax_score` can override the trip-level value — useful
+    when Day 1 is sightseeing-heavy and Day 3 is a beach day.
 
     If ANY of those three are missing AND would meaningfully change the plan,
     ask ONE short counter-prompt covering the most decision-relevant gap —

@@ -59,6 +59,7 @@ class DayAnchor:
     duration_bands: Optional[list[str]] = None
     max_drive_minutes_between_stops: Optional[int] = None
     candidate_radius_km: Optional[float] = None
+    relax_score: Optional[int] = None                    # per-day override; falls back to trip-level
     notes: Optional[str] = None                          # free-form context for the day
 
 
@@ -76,6 +77,11 @@ class BuildTripInput:
     budget_band: Optional[str] = None
     max_drive_minutes_between_stops: int = 30
     candidate_radius_km: float = 50.0
+
+    # 1-10 scale, 5 = neutral. Trip-level default; each DayAnchor.relax_score
+    # overrides this for that day if set (so Day 1 can be packed and Day 3
+    # super chill).
+    relax_score: int = 5
 
     # Cross-day variety
     enforce_no_repeats: bool = True
@@ -193,6 +199,8 @@ def build_trip_itinerary(
                                              or inp.max_drive_minutes_between_stops),
             candidate_radius_km=(anchor.candidate_radius_km
                                  or inp.candidate_radius_km),
+            relax_score=(anchor.relax_score if anchor.relax_score is not None
+                         else inp.relax_score),
             include_doc_ids=list(inp.preserve_doc_ids),
             exclude_doc_ids=(list(used_doc_ids) if inp.enforce_no_repeats
                              else list(inp.reject_doc_ids)),

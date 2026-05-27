@@ -216,6 +216,25 @@ BUILD_DAY_ITINERARY_SCHEMA = {
             "travelling_with": {"type": "string", "enum": ["solo", "couple", "family", "group"]},
             "max_drive_minutes_between_stops": {"type": "integer", "default": 30},
             "candidate_radius_km": {"type": "number", "default": 50.0},
+            "relax_score": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10,
+                "default": 5,
+                "description": (
+                    "How relaxed (10) vs rushed (1) the day should feel. Affects how "
+                    "long the user lingers at flexible places like beaches, lookouts, "
+                    "parks, gardens (e.g. 1.7x stay time at score=10). Walks/tracks/"
+                    "museums barely flex because their duration is fixed. Drive time "
+                    "is never affected. Pace controls number of stops; relax_score "
+                    "controls how long at each stop — they're independent levers."
+                    "\n\n"
+                    "Infer from user phrasing: 'packed/squeeze in lots/efficient' → 2-3, "
+                    "no signal or 'balanced' → 5, 'relaxed/take it easy' → 7, "
+                    "'super chill/lazy day' → 9. Don't ask for a number — ask about "
+                    "vibe and map to a score yourself."
+                ),
+            },
             "include_doc_ids": {
                 "type": "array", "items": {"type": "string"},
                 "description": "Optional. Pre-curated places (e.g. from prior search_places call) to use as the candidate pool.",
@@ -259,6 +278,10 @@ BUILD_TRIP_ITINERARY_SCHEMA = {
                         "themes": {"type": "array", "items": {"type": "string", "enum": _THEMES}},
                         "place_subtypes": {"type": "array", "items": {"type": "string", "enum": _PLACE_SUBTYPES}},
                         "physical_intensity_max": {"type": "string", "enum": _INTENSITIES},
+                        "relax_score": {
+                            "type": "integer", "minimum": 1, "maximum": 10,
+                            "description": "Per-day relax score override (1=rushed, 10=super relaxed). Omit to inherit the trip-level relax_score. Use this when one day is meant to feel different — e.g. Day 1 packed sightseeing (3), Day 3 beach lazing (8).",
+                        },
                         "notes": {"type": "string"},
                     },
                     "required": ["base_location", "region"],
@@ -273,6 +296,10 @@ BUILD_TRIP_ITINERARY_SCHEMA = {
             "travelling_with": {"type": "string", "enum": ["solo", "couple", "family", "group"]},
             "max_drive_minutes_between_stops": {"type": "integer", "default": 30},
             "candidate_radius_km": {"type": "number", "default": 50.0},
+            "relax_score": {
+                "type": "integer", "minimum": 1, "maximum": 10, "default": 5,
+                "description": "Trip-level relax score (1=rushed, 10=super relaxed). Sets baseline stay time at flexible places (beaches, lookouts, parks); individual days can override via DayAnchor.relax_score. See build_day_itinerary's relax_score for full semantics.",
+            },
             "enforce_no_repeats": {"type": "boolean", "default": True},
         },
         "required": ["day_anchors"],
@@ -658,6 +685,7 @@ def _make_build_day_input(args: dict) -> BuildDayInput:
         budget_band=args.get("budget_band"),
         max_drive_minutes_between_stops=int(args.get("max_drive_minutes_between_stops", 30)),
         candidate_radius_km=float(args.get("candidate_radius_km", 50.0)),
+        relax_score=int(args.get("relax_score", 5)),
         include_doc_ids=args.get("include_doc_ids", []) or [],
         exclude_doc_ids=args.get("exclude_doc_ids", []) or [],
         constraints=args.get("constraints", []) or [],
@@ -675,6 +703,7 @@ def _make_build_trip_input(args: dict) -> BuildTripInput:
             themes=a.get("themes"),
             place_subtypes=a.get("place_subtypes"),
             physical_intensity_max=a.get("physical_intensity_max"),
+            relax_score=(int(a["relax_score"]) if a.get("relax_score") is not None else None),
             notes=a.get("notes"),
         )
         for a in args.get("day_anchors", [])
@@ -688,6 +717,7 @@ def _make_build_trip_input(args: dict) -> BuildTripInput:
         travelling_with=args.get("travelling_with"),
         max_drive_minutes_between_stops=int(args.get("max_drive_minutes_between_stops", 30)),
         candidate_radius_km=float(args.get("candidate_radius_km", 50.0)),
+        relax_score=int(args.get("relax_score", 5)),
         enforce_no_repeats=bool(args.get("enforce_no_repeats", True)),
     )
 

@@ -59,6 +59,59 @@ DURATION_MINUTES_BY_BAND = {
     None:           75,         # default if duration unknown
 }
 
+# Place subtypes where stay-time genuinely flexes with how relaxed the trip is.
+# A beach can be a 20-min photo stop or a 3-hr picnic — same place, hugely
+# different durations. Walks/tracks/museums have a natural duration that
+# doesn't flex much: a 5km loop track is still a 5km loop track regardless
+# of mood. Drive time is never touched by the relax score.
+#
+# Source enum: backend/tool_definitions.py `_PLACE_SUBTYPES`. Anything not
+# in this set is treated as time-fixed and only gets a small relax multiplier.
+_LINGERABLE_SUBTYPES = frozenset({
+    "beach", "lake", "lagoon", "wetland", "river",
+    "lookout", "picnic_spot",
+    "botanic_garden", "bird_sanctuary",
+    "regional_park", "scenic_reserve", "national_park", "marine_reserve",
+    "waterfall", "sea_cave", "cliff", "island", "mountain", "glacier", "forest",
+})
+
+
+def _relax_multiplier(score: Optional[int], subtype: Optional[str]) -> float:
+    """Convert a 1-10 relax score to a per-place duration multiplier.
+
+    - score=5 is neutral (1.0× everywhere) — preserves the legacy behaviour
+      when no relax_score is passed.
+    - Lingerable subtypes (beaches, lookouts, parks…) flex meaningfully:
+      0.7× at score=1 (rushed) up to 1.7× at score=10 (super relaxed).
+    - Time-fixed subtypes (walks, tracks, museums, drives) flex only ±10%
+      since their natural duration is what it is.
+    - Drive time and meal slots are NOT multiplied here — caller-side concern.
+
+    Asymmetric: rush-mode (below 5) shaves more gently than relax-mode
+    (above 5) extends, matching how humans actually plan — you'll happily
+    double a beach session but rarely chop one in half.
+    """
+    if score is None:
+        return 1.0
+    s = max(1, min(10, score))
+    if subtype in _LINGERABLE_SUBTYPES:
+        if s <= 5:
+            return 0.7 + (s - 1) * 0.075   # 1→0.7, 5→1.0
+        return 1.0 + (s - 5) * 0.14        # 5→1.0, 10→1.7
+    return 1.0 + (s - 5) * 0.02            # 1→0.92, 5→1.0, 10→1.10
+
+
+def _visit_minutes(duration_band: Optional[str], subtype: Optional[str],
+                   relax_score: Optional[int]) -> int:
+    """Single source of truth for how long a place visit gets in a day plan.
+
+    Combines the editorial duration band (sub_hour, 1_to_2_hours, …) with
+    the relax-score multiplier for the place's subtype. Always returns a
+    positive integer minute count, rounded.
+    """
+    base = DURATION_MINUTES_BY_BAND.get(duration_band, 75)
+    return max(15, int(round(base * _relax_multiplier(relax_score, subtype))))
+
 
 # =====================================================================
 # Public dataclasses
@@ -84,6 +137,11 @@ class BuildDayInput:
 
     max_drive_minutes_between_stops: int = 30
     candidate_radius_km: float = 50.0                   # how far around base to search
+
+    # 1-10 scale, 5 = neutral (legacy behaviour). Lower = rushed, shaves time
+    # off lingerable visits like beaches/parks. Higher = relaxed, extends them.
+    # Walks/tracks/museums barely flex; drive time is never affected.
+    relax_score: int = 5
 
     include_doc_ids: list[str] = field(default_factory=list)
     exclude_doc_ids: list[str] = field(default_factory=list)
@@ -274,6 +332,7 @@ def build_day_itinerary(
             max_drive_min=inp.max_drive_minutes_between_stops,
             meal_inserted=meal_inserted,
             is_first_pick=(place_count == 0),
+            relax_score=inp.relax_score,
         )
         if not choice:
             break
@@ -567,6 +626,7 @@ def _pick_best_candidate(
     max_drive_min: int,
     meal_inserted: bool,
     is_first_pick: bool = False,
+    relax_score: int = 5,
 ) -> Optional[tuple[SearchPlaceResult, float, int]]:
     """Return (candidate, drive_minutes, visit_minutes) of the best feasible pick, or None.
 
@@ -590,7 +650,7 @@ def _pick_best_candidate(
         if drive_min > max_drive_min:
             continue
 
-        visit_min = DURATION_MINUTES_BY_BAND.get(c.duration_band, 75)
+        visit_min = _visit_minutes(c.duration_band, c.place_subtype_derived, relax_score)
         # Allow the visit to fit within the day window
         if current_time_min + drive_min + visit_min > end_time_min - 15:
             continue
