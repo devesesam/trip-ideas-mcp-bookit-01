@@ -152,6 +152,7 @@ class BuildDayInput:
 class PlaceSlotData:
     sanity_doc_id: str
     title: str
+    slug: Optional[str]
     place_subtype: Optional[str]
     location_settlement: Optional[str]
     coords: Optional[dict]
@@ -338,8 +339,8 @@ def build_day_itinerary(
             break
         cand, drive_min, visit_min = choice
 
-        # Travel gap (only if ≥ 5 minutes drive)
-        if drive_min >= 5:
+        # Travel gap for any real drive (≥ 1 min). Sub-1-min ≈ same spot, skip.
+        if drive_min >= 1:
             slots.append(_make_travel_gap_slot(
                 slot_index=len(slots),
                 start_min=current_time,
@@ -677,6 +678,7 @@ def _make_place_slot(slot_index: int, start_min: int, duration_min: int,
         place=PlaceSlotData(
             sanity_doc_id=cand.sanity_doc_id,
             title=cand.title,
+            slug=cand.slug,
             place_subtype=cand.place_subtype_derived,
             location_settlement=cand.settlement,
             coords=cand.coords,
@@ -734,7 +736,7 @@ def _make_meal_gap_slot(slot_index: int, start_min: int, meal: str,
 def _hydrate_pool_from_ids(client: SanityClient, ids: list[str]) -> list[SearchPlaceResult]:
     """Fetch a fixed set of pages by ID and adapt them to SearchPlaceResult shape."""
     docs = client.query(
-        "*[_id in $ids]{_id, title, coordinates, aiMetadata, "
+        "*[_id in $ids]{_id, title, \"slug\": slug.current, coordinates, aiMetadata, "
         '"tag_names": tags[]->name, "subRegion_name": subRegion->name, '
         '"region_name": subRegion->region->name}',
         params={"ids": ids},
@@ -751,6 +753,7 @@ def _hydrate_pool_from_ids(client: SanityClient, ids: list[str]) -> list[SearchP
         out.append(SearchPlaceResult(
             sanity_doc_id=d["_id"],
             title=d.get("title") or "(untitled)",
+            slug=d.get("slug"),
             region=d.get("region_name") or "",
             subRegion=d.get("subRegion_name"),
             settlement=ai.settlement(),

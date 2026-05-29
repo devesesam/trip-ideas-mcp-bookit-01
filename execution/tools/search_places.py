@@ -95,6 +95,7 @@ class SearchPlacesInput:
 class SearchPlaceResult:
     sanity_doc_id: str
     title: str
+    slug: Optional[str]
     region: str
     subRegion: Optional[str]
     settlement: Optional[str]
@@ -288,6 +289,7 @@ def search_places(
         enriched.append(SearchPlaceResult(
             sanity_doc_id=doc["_id"],
             title=doc.get("title") or "(untitled)",
+            slug=doc.get("slug"),
             region=canonical_region,
             subRegion=doc.get("subRegion_name"),
             settlement=ai.settlement(),
@@ -425,7 +427,7 @@ def _fetch_candidates(
 
     groq = (
         f"*[{' && '.join(clauses)}]{{"
-        '_id, title, coordinates, aiMetadata, '
+        '_id, title, "slug": slug.current, coordinates, aiMetadata, '
         '"tag_names": tags[]->name, '
         '"subRegion_name": subRegion->name'
         "}"

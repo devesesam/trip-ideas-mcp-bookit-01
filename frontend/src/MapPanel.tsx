@@ -87,24 +87,45 @@ interface GeoProps {
   to_settlement?: string;
   estimated_km?: number;
   estimated_drive_minutes?: number;
+  stop_count?: number;
+  polyline_source?: string;
 }
 
-function lineStyle(feature?: Feature<Geometry, GeoProps>) {
+// Route line colour — dark blue (Blue-800). Used for both intra-day
+// (`drive_route`) and inter-day (`inter_day_drive`) segments; both solid.
+const ROUTE_COLOR = "#1e40af";
+
+function isLineFeature(feature?: Feature<Geometry, GeoProps>): boolean {
+  return feature?.geometry?.type === "LineString";
+}
+
+function isPointFeature(feature?: Feature<Geometry, GeoProps>): boolean {
+  return feature?.geometry?.type === "Point";
+}
+
+// Visible route line — solid, dark blue, for BOTH intra-day and inter-day
+// segments (Douglas: route should be solid the whole time, no dotting).
+// interactive:false so hover passes through to the fat transparent hit-area
+// layer beneath it (see routeHitStyle / the three-layer render below).
+function visibleLineStyle(feature?: Feature<Geometry, GeoProps>) {
   const role = feature?.properties?.role;
-  const accent = brandAccent();
-  if (role === "inter_day_drive") {
-    return {
-      color: accent,
-      weight: 3,
-      opacity: 0.9,
-      dashArray: "6 6",
-    };
-  }
-  // drive_route or any other LineString
+  // Slight weight distinction kept (inter-day a touch thinner) but both solid.
   return {
-    color: accent,
-    weight: 4,
+    color: ROUTE_COLOR,
+    weight: role === "inter_day_drive" ? 3.5 : 4,
     opacity: 1,
+    interactive: false,
+  };
+}
+
+// Invisible fat overlay that makes the thin route line easy to hover.
+// weight 18 gives a generous hit target; opacity 0 keeps it invisible.
+function routeHitStyle() {
+  return {
+    color: ROUTE_COLOR,
+    weight: 18,
+    opacity: 0,
+    interactive: true,
   };
 }
 
@@ -129,20 +150,26 @@ function pointToLayer(feature: Feature<Point, GeoProps>, latlng: L.LatLng) {
   });
 }
 
-function onEachFeature(feature: Feature<Geometry, GeoProps>, layer: L.Layer) {
+// Tooltip for place/base pins.
+function bindPointTooltip(feature: Feature<Geometry, GeoProps>, layer: L.Layer) {
   const p = feature.properties || {};
-  if (feature.geometry.type === "Point") {
-    if (p.role === "place" && p.title) {
-      const time = p.start_time ? `<div style="opacity:.7;font-size:11px">${p.start_time}</div>` : "";
-      const settlement = p.settlement ? `<div style="opacity:.7;font-size:11px">${p.settlement}</div>` : "";
-      layer.bindTooltip(
-        `<strong>${p.title}</strong>${time}${settlement}`,
-        { direction: "top", offset: [0, -6], opacity: 1 },
-      );
-    } else if (p.role === "base" && p.label) {
-      layer.bindTooltip(p.label, { direction: "top", offset: [0, -6] });
-    }
-  } else if (feature.geometry.type === "LineString" && p.role === "inter_day_drive") {
+  if (p.role === "place" && p.title) {
+    const time = p.start_time ? `<div style="opacity:.7;font-size:11px">${p.start_time}</div>` : "";
+    const settlement = p.settlement ? `<div style="opacity:.7;font-size:11px">${p.settlement}</div>` : "";
+    layer.bindTooltip(
+      `<strong>${p.title}</strong>${time}${settlement}`,
+      { direction: "top", offset: [0, -6], opacity: 1 },
+    );
+  } else if (p.role === "base" && p.label) {
+    layer.bindTooltip(p.label, { direction: "top", offset: [0, -6] });
+  }
+}
+
+// Tooltip for route lines, bound to the fat hit-area layer. inter_day_drive
+// carries from/to/distance; intra-day drive_route shows a simple summary.
+function bindRouteTooltip(feature: Feature<Geometry, GeoProps>, layer: L.Layer) {
+  const p = feature.properties || {};
+  if (p.role === "inter_day_drive") {
     if (p.from_settlement && p.to_settlement) {
       const km = p.estimated_km != null ? `${p.estimated_km.toFixed(0)} km` : "";
       const mins = p.estimated_drive_minutes != null ? `~${p.estimated_drive_minutes} min` : "";
@@ -152,6 +179,12 @@ function onEachFeature(feature: Feature<Geometry, GeoProps>, layer: L.Layer) {
         { sticky: true },
       );
     }
+  } else if (p.role === "drive_route") {
+    const stops = p.stop_count != null ? `${p.stop_count} stops` : "";
+    layer.bindTooltip(
+      `Driving route${stops ? `<br/><span style="opacity:.7;font-size:11px">${stops}</span>` : ""}`,
+      { sticky: true },
+    );
   }
 }
 
@@ -208,14 +241,34 @@ export function MapPanel({ className = "" }: MapPanelProps) {
   // (rather than diff-patching old features under new ones).
   const geojsonLayer = useMemo(() => {
     if (!hasRoute || !latestRouteId) return null;
+    const fc = route as FeatureCollection;
+    // Three stacked layers, mounted bottom → top:
+    //   1. fat transparent hit-area for the route lines (easy hover target)
+    //   2. visible solid route lines (non-interactive — hover falls through to 1)
+    //   3. place/base pins on top (so their tooltips win over the fat line)
     return (
-      <GeoJSON
-        key={latestRouteId}
-        data={route as FeatureCollection}
-        style={lineStyle as L.StyleFunction}
-        pointToLayer={pointToLayer as L.GeoJSONOptions["pointToLayer"]}
-        onEachFeature={onEachFeature}
-      />
+      <>
+        <GeoJSON
+          key={`${latestRouteId}-hit`}
+          data={fc}
+          filter={isLineFeature as L.GeoJSONOptions["filter"]}
+          style={routeHitStyle as L.StyleFunction}
+          onEachFeature={bindRouteTooltip}
+        />
+        <GeoJSON
+          key={`${latestRouteId}-line`}
+          data={fc}
+          filter={isLineFeature as L.GeoJSONOptions["filter"]}
+          style={visibleLineStyle as L.StyleFunction}
+        />
+        <GeoJSON
+          key={`${latestRouteId}-pts`}
+          data={fc}
+          filter={isPointFeature as L.GeoJSONOptions["filter"]}
+          pointToLayer={pointToLayer as L.GeoJSONOptions["pointToLayer"]}
+          onEachFeature={bindPointTooltip}
+        />
+      </>
     );
   }, [hasRoute, latestRouteId, route]);
 
