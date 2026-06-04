@@ -223,7 +223,10 @@ BUILD_DAY_ITINERARY_SCHEMA = {
             "physical_intensity_max": {"type": "string", "enum": _INTENSITIES},
             "duration_bands": {"type": "array", "items": {"type": "string", "enum": _DURATIONS}},
             "travelling_with": {"type": "string", "enum": ["solo", "couple", "family", "group"]},
-            "max_drive_minutes_between_stops": {"type": "integer", "default": 30},
+            "max_drive_minutes_between_stops": {
+                "type": "integer", "default": 30,
+                "description": "Hard cap on drive time between consecutive stops. Default 30 min works for single-base city/town days. Bump to 45–60 for regional days with a wider spread, 60–90 for road-trip days ('drive A to B stopping along the way'), and 60 for sparse-region days (West Coast, Catlins, East Cape). See HARD_RULE #9 for the full scope→value table. Pair this with `candidate_radius_km` — both should move together.",
+            },
             "candidate_radius_km": {"type": "number", "default": 50.0},
             "relax_score": {
                 "type": "integer",
@@ -323,7 +326,10 @@ BUILD_TRIP_ITINERARY_SCHEMA = {
             "place_subtypes": {"type": "array", "items": {"type": "string", "enum": _PLACE_SUBTYPES}},
             "physical_intensity_max": {"type": "string", "enum": _INTENSITIES},
             "travelling_with": {"type": "string", "enum": ["solo", "couple", "family", "group"]},
-            "max_drive_minutes_between_stops": {"type": "integer", "default": 30},
+            "max_drive_minutes_between_stops": {
+                "type": "integer", "default": 30,
+                "description": "Hard cap on drive time between consecutive stops. Default 30 min works for single-base city/town days. Bump to 45–60 for regional days with a wider spread, 60–90 for road-trip days ('drive A to B stopping along the way'), and 60 for sparse-region days (West Coast, Catlins, East Cape). See HARD_RULE #9 for the full scope→value table. Pair this with `candidate_radius_km` — both should move together.",
+            },
             "candidate_radius_km": {"type": "number", "default": 50.0},
             "relax_score": {
                 "type": "integer", "minimum": 1, "maximum": 10, "default": 5,
