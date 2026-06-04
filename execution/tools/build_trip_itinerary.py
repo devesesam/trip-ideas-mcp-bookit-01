@@ -79,7 +79,7 @@ class BuildTripInput:
     travelling_with: Optional[str] = None
     budget_band: Optional[str] = None
     max_drive_minutes_between_stops: int = 30
-    candidate_radius_km: float = 25.0       # tuned for city/town days; bump for regional/road-trip
+    candidate_radius_km: float = 50.0       # regional default; pair with subRegion for sub-region-tight days
 
     # Trip-level sub-region defaults; each DayAnchor.subRegion / .subRegions
     # overrides for that day. Strongly recommended when the trip stays inside

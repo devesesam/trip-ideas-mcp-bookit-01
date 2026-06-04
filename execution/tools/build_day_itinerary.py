@@ -144,7 +144,7 @@ class BuildDayInput:
     budget_band: Optional[str] = None                   # currently informational only
 
     max_drive_minutes_between_stops: int = 30
-    candidate_radius_km: float = 25.0                   # default tuned for city/town days; bump for regional/road-trip
+    candidate_radius_km: float = 50.0                   # regional default; pair with subRegion for sub-region-tight days
 
     # 1-10 scale, 5 = neutral (legacy behaviour). Lower = rushed, shaves time
     # off lingerable visits like beaches/parks. Higher = relaxed, extends them.

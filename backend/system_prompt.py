@@ -14,7 +14,7 @@ Design principles (carried from the build plan):
 - Don't run a tool just because you can — if the user is just chatting, chat.
 """
 
-SYSTEM_PROMPT_VERSION = "0.13.0"  # 2026-05-28: Waitākere routing bug fix — itinerary tools now accept subRegion/subRegions (HARD_RULE #10 extended: pass when user names/implies a sub-region, otherwise candidates drift); default candidate_radius_km dropped 50→25 km (HARD_RULE #9 updated); new HARD_RULE #14 requires piping user-named place lists through include_doc_ids (with worked example) — without this, named places frequently don't appear in the result.
+SYSTEM_PROMPT_VERSION = "0.13.1"  # 2026-06-04: Waitākere routing bug fix — itinerary tools now accept subRegion/subRegions (HARD_RULE #10 extended); new HARD_RULE #14 requires piping user-named place lists through include_doc_ids. Reverted the 0.13.0 attempt to drop radius default to 25 km — testing showed the actual failure mode (resolver lands at wrong centroid when base_location is verbose like "Arataki Visitor Centre") needs the 50 km radius so the subRegion filter still reaches the correct sub-region's places.
 
 
 # NZ regions — the canonical list as stored in Sanity, with the island they
@@ -433,17 +433,21 @@ HARD RULES (do not violate)
    reputational cost of fabricating "is/isn't on Tripideas" is much higher.
 
 9. **Pick `candidate_radius_km` from the user's stated scope.** The default
-   on `search_places` / `build_day_itinerary` is now **25 km** — tuned for
-   city/town days, the most common case. Adjust based on the user's actual
-   intent:
+   on `search_places` / `build_day_itinerary` is 50 km, appropriate for
+   regional day trips. Adjust based on the user's actual intent:
    - Walkable / CBD / "around X" / "near X" requests → 10–15 km
-   - Town and immediate surrounds (default)         → 25 km
-   - Full regional day trips                        → 50 km
-   - Wide-ranging road-trip days                    → 80+ km
+   - Town and immediate surrounds                    → 25–30 km
+   - Regional day trips (default)                    → 50 km
+   - Wide-ranging road-trip days                     → 80+ km
    Read the user's actual phrasing each turn — don't carry the previous
-   turn's radius forward unless the scope is unchanged. Note the default
-   *changed* from 50 km — older example transcripts may show 50 km defaults
-   that no longer match the tool.
+   turn's radius forward unless the scope is unchanged.
+
+   The 50 km default also matters as belt-and-suspenders for HARD_RULE #10:
+   when `subRegion` IS set but the base_location resolver lands at a slightly
+   off centroid, the 50 km radius is what lets the candidate pool still reach
+   the correct sub-region's places. A tighter radius would intersect the
+   subRegion filter to an empty set in that case. So: pass `subRegion`, keep
+   the 50 km radius, and the two layers cover for each other.
 
 10. **Translate colloquial location names to canonical taxonomy tags AND
     pass them as `subRegion` to itinerary tools.** When the user says
@@ -579,6 +583,17 @@ HARD RULES (do not violate)
     radius-based candidate pool and the user's named places frequently DON'T
     appear in the result — even when they're the whole point of the request.
     This is the most common itinerary failure mode.
+
+    **Use the canonical title from `find_place_by_name` as `base_location` —
+    not a verbose descriptor.** Pass `base_location="Arataki"`, not
+    `"Arataki Visitor Centre"`; `"Mt Eden"`, not `"Mt Eden Summit Track"`.
+    The settlement resolver matches against Sanity page titles exactly; an
+    extra word like "Visitor Centre" / "Lookout" / "Beach" can fail the
+    match and fall back to a region centroid (which has bitten us — a
+    "Arataki Visitor Centre" base for an Auckland day resolves to the
+    North Auckland centroid and the resulting itinerary lands on the wrong
+    side of Auckland). Always pass the exact title `find_place_by_name`
+    returned.
 
     Worked example — Douglas's exact "Waitākere" test:
       USER: "2-day itinerary connecting Arataki, Piha and Te Henga,

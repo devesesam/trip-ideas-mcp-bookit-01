@@ -224,7 +224,7 @@ BUILD_DAY_ITINERARY_SCHEMA = {
             "duration_bands": {"type": "array", "items": {"type": "string", "enum": _DURATIONS}},
             "travelling_with": {"type": "string", "enum": ["solo", "couple", "family", "group"]},
             "max_drive_minutes_between_stops": {"type": "integer", "default": 30},
-            "candidate_radius_km": {"type": "number", "default": 25.0},
+            "candidate_radius_km": {"type": "number", "default": 50.0},
             "relax_score": {
                 "type": "integer",
                 "minimum": 1,
@@ -324,7 +324,7 @@ BUILD_TRIP_ITINERARY_SCHEMA = {
             "physical_intensity_max": {"type": "string", "enum": _INTENSITIES},
             "travelling_with": {"type": "string", "enum": ["solo", "couple", "family", "group"]},
             "max_drive_minutes_between_stops": {"type": "integer", "default": 30},
-            "candidate_radius_km": {"type": "number", "default": 25.0},
+            "candidate_radius_km": {"type": "number", "default": 50.0},
             "relax_score": {
                 "type": "integer", "minimum": 1, "maximum": 10, "default": 5,
                 "description": "Trip-level relax score (1=rushed, 10=super relaxed). Sets baseline stay time at flexible places (beaches, lookouts, parks); individual days can override via DayAnchor.relax_score. See build_day_itinerary's relax_score for full semantics.",
@@ -715,7 +715,7 @@ def _make_build_day_input(args: dict) -> BuildDayInput:
         travelling_with=args.get("travelling_with"),
         budget_band=args.get("budget_band"),
         max_drive_minutes_between_stops=int(args.get("max_drive_minutes_between_stops", 30)),
-        candidate_radius_km=float(args.get("candidate_radius_km", 25.0)),
+        candidate_radius_km=float(args.get("candidate_radius_km", 50.0)),
         relax_score=int(args.get("relax_score", 5)),
         include_doc_ids=args.get("include_doc_ids", []) or [],
         exclude_doc_ids=args.get("exclude_doc_ids", []) or [],
@@ -753,7 +753,7 @@ def _make_build_trip_input(args: dict) -> BuildTripInput:
         physical_intensity_max=args.get("physical_intensity_max"),
         travelling_with=args.get("travelling_with"),
         max_drive_minutes_between_stops=int(args.get("max_drive_minutes_between_stops", 30)),
-        candidate_radius_km=float(args.get("candidate_radius_km", 25.0)),
+        candidate_radius_km=float(args.get("candidate_radius_km", 50.0)),
         relax_score=int(args.get("relax_score", 5)),
         enforce_no_repeats=bool(args.get("enforce_no_repeats", True)),
     )
