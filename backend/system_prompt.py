@@ -14,7 +14,7 @@ Design principles (carried from the build plan):
 - Don't run a tool just because you can — if the user is just chatting, chat.
 """
 
-SYSTEM_PROMPT_VERSION = "0.13.1"  # 2026-06-04: Waitākere routing bug fix — itinerary tools now accept subRegion/subRegions (HARD_RULE #10 extended); new HARD_RULE #14 requires piping user-named place lists through include_doc_ids. Reverted the 0.13.0 attempt to drop radius default to 25 km — testing showed the actual failure mode (resolver lands at wrong centroid when base_location is verbose like "Arataki Visitor Centre") needs the 50 km radius so the subRegion filter still reaches the correct sub-region's places.
+SYSTEM_PROMPT_VERSION = "0.13.2"  # 2026-06-04: NZ_REGIONS_REFERENCE fix — canonical South Island region is "Tasman" not "Nelson Tasman"; Golden Bay is a subRegion of Tasman, not a peer region. Updated aliases for Nelson / Tasman / Golden Bay / Nelson Lakes / Queenstown / Wanaka / Mt Cook to also carry subRegion. Surfaced by Test C in the smoke suite where 'Day 1 — Nelson' failed with INVALID_REGION.
 
 
 # NZ regions — the canonical list as stored in Sanity, with the island they
@@ -26,23 +26,28 @@ North Island regions:
   Hawke Bay, Taranaki, Manawatū-Whanganui, Wellington
 
 South Island regions:
-  Nelson Tasman, Golden Bay (Mohua), Marlborough, West Coast, Canterbury, Otago, Southland
+  Tasman, Marlborough, West Coast, Canterbury, Otago, Southland
 
 Stewart Island content lives under Southland → Rakiura subRegion.
+Golden Bay / Mohua content lives under Tasman → Golden Bay subRegion (NOT a
+peer region of its own). Nelson City and Nelson Lakes are also subRegions of
+Tasman.
 
 Common aliases users may say (resolve before calling tools):
   "Bay of Islands"        → region=Northland
   "BoP"                   → region=Bay of Plenty
   "Hawke's Bay"           → region=Hawke Bay  (Sanity uses no apostrophe + no 's')
-  "Nelson"                → region=Nelson Tasman
-  "Tasman"                → region=Nelson Tasman
+  "Nelson" / "Nelson City"→ region=Tasman, subRegion=Nelson City
+  "Tasman"                → region=Tasman
+  "Nelson Tasman"         → region=Tasman      (legacy phrasing; canonical region is just "Tasman")
+  "Golden Bay" / "Mohua"  → region=Tasman, subRegion=Golden Bay
+  "Nelson Lakes"          → region=Tasman, subRegion=Nelson Lakes
   "Stewart Island"        → region=Southland, subRegion=Rakiura
-  "Queenstown"            → region=Otago
-  "Wanaka"                → region=Otago
-  "Christchurch"          → region=Canterbury
-  "Mackenzie Country"     → region=Canterbury
-  "Aoraki Mt Cook"        → region=Canterbury
-  "Mt Cook"               → region=Canterbury
+  "Queenstown"            → region=Otago, subRegion=Queenstown Lakes
+  "Wanaka"                → region=Otago, subRegion=Queenstown Lakes
+  "Christchurch"          → region=Canterbury, subRegion=Christchurch
+  "Mackenzie Country"     → region=Canterbury, subRegion=Mackenzie Country
+  "Aoraki Mt Cook" / "Mt Cook" → region=Canterbury, subRegion=Aoraki Mount Cook
   "Fiordland"             → region=Southland
   "Milford Sound"         → region=Southland
 """.strip()
