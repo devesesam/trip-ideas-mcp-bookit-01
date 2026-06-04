@@ -122,6 +122,14 @@ def _visit_minutes(duration_band: Optional[str], subtype: Optional[str],
 class BuildDayInput:
     base_location: str                                  # required
     region: str                                         # required (region-strict)
+    # Sub-region narrowing — strongly recommended when the user names or implies
+    # one. Without this, the candidate pool is bounded only by region + radius,
+    # which in big regions (Auckland, Canterbury) drifts hard. e.g. base_location
+    # "Piha" with no subRegion can surface North Shore candidates because the
+    # 25 km circle reaches that far. Use `subRegions` for multi-zone days
+    # ("CBD + a ferry trip" style); use `subRegion` for the common single case.
+    subRegion: Optional[str] = None
+    subRegions: list[str] = field(default_factory=list)
     pace: str = "balanced"                              # relaxed | balanced | full
     date: Optional[str] = None                          # YYYY-MM-DD; for seasonality filter
     start_time: str = "09:00"
@@ -136,7 +144,7 @@ class BuildDayInput:
     budget_band: Optional[str] = None                   # currently informational only
 
     max_drive_minutes_between_stops: int = 30
-    candidate_radius_km: float = 50.0                   # how far around base to search
+    candidate_radius_km: float = 25.0                   # default tuned for city/town days; bump for regional/road-trip
 
     # 1-10 scale, 5 = neutral (legacy behaviour). Lower = rushed, shaves time
     # off lingerable visits like beaches/parks. Higher = relaxed, extends them.
@@ -267,6 +275,8 @@ def build_day_itinerary(
     else:
         sp_in = SearchPlacesInput(
             region=inp.region,
+            subRegion=inp.subRegion,
+            subRegions=inp.subRegions,
             themes=inp.themes,
             place_subtypes=inp.place_subtypes,
             physical_intensity_max=inp.physical_intensity_max,

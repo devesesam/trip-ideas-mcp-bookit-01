@@ -59,7 +59,10 @@ class DayAnchor:
     duration_bands: Optional[list[str]] = None
     max_drive_minutes_between_stops: Optional[int] = None
     candidate_radius_km: Optional[float] = None
+    subRegion: Optional[str] = None                      # per-day override; falls back to trip-level
+    subRegions: Optional[list[str]] = None               # per-day override (multi-zone)
     relax_score: Optional[int] = None                    # per-day override; falls back to trip-level
+    include_doc_ids: Optional[list[str]] = None          # per-day pinning ("Day 1 must include these specific places")
     notes: Optional[str] = None                          # free-form context for the day
 
 
@@ -76,7 +79,14 @@ class BuildTripInput:
     travelling_with: Optional[str] = None
     budget_band: Optional[str] = None
     max_drive_minutes_between_stops: int = 30
-    candidate_radius_km: float = 50.0
+    candidate_radius_km: float = 25.0       # tuned for city/town days; bump for regional/road-trip
+
+    # Trip-level sub-region defaults; each DayAnchor.subRegion / .subRegions
+    # overrides for that day. Strongly recommended when the trip stays inside
+    # one sub-region (otherwise candidates drift to neighbouring sub-regions
+    # within the 25 km radius).
+    subRegion: Optional[str] = None
+    subRegions: list[str] = field(default_factory=list)
 
     # 1-10 scale, 5 = neutral. Trip-level default; each DayAnchor.relax_score
     # overrides this for that day if set (so Day 1 can be packed and Day 3
@@ -177,10 +187,20 @@ def build_trip_itinerary(
 
     # --- Build each day ---
     for i, anchor in enumerate(inp.day_anchors):
-        # Compose per-day input from trip-level + per-day overrides
+        # Compose per-day input from trip-level + per-day overrides.
+        # Per-day include_doc_ids (anchor.include_doc_ids) takes priority over
+        # the trip-level preserve_doc_ids when set — that's the "pin these
+        # specific places to THIS day" mechanism.
+        day_include_doc_ids = (anchor.include_doc_ids
+                               if anchor.include_doc_ids is not None
+                               else list(inp.preserve_doc_ids))
         day_in = BuildDayInput(
             base_location=anchor.base_location,
             region=anchor.region,
+            subRegion=(anchor.subRegion if anchor.subRegion is not None
+                       else inp.subRegion),
+            subRegions=(anchor.subRegions if anchor.subRegions is not None
+                        else inp.subRegions),
             date=anchor.date,
             pace=anchor.pace or inp.pace,
             themes=anchor.themes if anchor.themes is not None else inp.themes,
@@ -201,7 +221,7 @@ def build_trip_itinerary(
                                  or inp.candidate_radius_km),
             relax_score=(anchor.relax_score if anchor.relax_score is not None
                          else inp.relax_score),
-            include_doc_ids=list(inp.preserve_doc_ids),
+            include_doc_ids=day_include_doc_ids,
             exclude_doc_ids=(list(used_doc_ids) if inp.enforce_no_repeats
                              else list(inp.reject_doc_ids)),
             constraints=[anchor.notes] if anchor.notes else [],

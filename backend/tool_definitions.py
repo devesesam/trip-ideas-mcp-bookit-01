@@ -205,6 +205,15 @@ BUILD_DAY_ITINERARY_SCHEMA = {
                 "type": "string",
                 "description": "NZ region the base sits in.",
             },
+            "subRegion": {
+                "type": "string",
+                "description": "Strongly recommended. Sub-region tag (e.g. 'West Auckland', 'Otago Peninsula', 'Central Auckland') that constrains the candidate pool. Without this, the day is bounded only by region + radius — which in large regions (Auckland, Canterbury) lets the radius drift into neighbouring sub-regions. Pass whenever the user names or implies a sub-region. Use `subRegions` for multi-zone days.",
+            },
+            "subRegions": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Multi-zone form. Pass instead of `subRegion` when the day legitimately spans multiple sub-regions of the same region (e.g. 'CBD + a Hauraki Gulf island' → ['Central Auckland', 'Hauraki Gulf Islands']).",
+            },
             "pace": {"type": "string", "enum": _PACES, "default": "balanced"},
             "date": {"type": "string", "description": "Optional YYYY-MM-DD."},
             "start_time": {"type": "string", "default": "09:00"},
@@ -215,7 +224,7 @@ BUILD_DAY_ITINERARY_SCHEMA = {
             "duration_bands": {"type": "array", "items": {"type": "string", "enum": _DURATIONS}},
             "travelling_with": {"type": "string", "enum": ["solo", "couple", "family", "group"]},
             "max_drive_minutes_between_stops": {"type": "integer", "default": 30},
-            "candidate_radius_km": {"type": "number", "default": 50.0},
+            "candidate_radius_km": {"type": "number", "default": 25.0},
             "relax_score": {
                 "type": "integer",
                 "minimum": 1,
@@ -272,6 +281,18 @@ BUILD_TRIP_ITINERARY_SCHEMA = {
                     "properties": {
                         "base_location": {"type": "string"},
                         "region": {"type": "string"},
+                        "subRegion": {
+                            "type": "string",
+                            "description": "Per-day sub-region override (e.g. 'West Auckland'). Omit to inherit the trip-level subRegion. Use this when individual days target different sub-regions (Day 1 = Central Auckland, Day 2 = West Auckland).",
+                        },
+                        "subRegions": {
+                            "type": "array", "items": {"type": "string"},
+                            "description": "Per-day multi-zone override. Same idea as the top-level subRegions but scoped to one day.",
+                        },
+                        "include_doc_ids": {
+                            "type": "array", "items": {"type": "string"},
+                            "description": "Pin specific places to THIS day. Use when the user named places that should appear on a particular day — e.g. 'Day 1 Arataki and Piha, Day 2 Te Henga'. Resolve names via find_place_by_name first to get the sanity_doc_ids, then pass them here per day. Overrides the trip-level preserve_doc_ids for this anchor when set.",
+                        },
                         "date": {"type": "string"},
                         "label": {"type": "string", "description": "e.g. 'Day 1 — arrival'"},
                         "pace": {"type": "string", "enum": _PACES},
@@ -290,12 +311,20 @@ BUILD_TRIP_ITINERARY_SCHEMA = {
             },
             "pace": {"type": "string", "enum": _PACES, "default": "balanced",
                      "description": "Trip-level default; per-anchor pace overrides this."},
+            "subRegion": {
+                "type": "string",
+                "description": "Trip-level sub-region default — applies to every day unless overridden per-anchor. Use when the whole trip stays in one sub-region (e.g. 'all 3 days around Otago Peninsula').",
+            },
+            "subRegions": {
+                "type": "array", "items": {"type": "string"},
+                "description": "Trip-level multi-zone default. Per-anchor subRegions overrides this.",
+            },
             "themes": {"type": "array", "items": {"type": "string", "enum": _THEMES}},
             "place_subtypes": {"type": "array", "items": {"type": "string", "enum": _PLACE_SUBTYPES}},
             "physical_intensity_max": {"type": "string", "enum": _INTENSITIES},
             "travelling_with": {"type": "string", "enum": ["solo", "couple", "family", "group"]},
             "max_drive_minutes_between_stops": {"type": "integer", "default": 30},
-            "candidate_radius_km": {"type": "number", "default": 50.0},
+            "candidate_radius_km": {"type": "number", "default": 25.0},
             "relax_score": {
                 "type": "integer", "minimum": 1, "maximum": 10, "default": 5,
                 "description": "Trip-level relax score (1=rushed, 10=super relaxed). Sets baseline stay time at flexible places (beaches, lookouts, parks); individual days can override via DayAnchor.relax_score. See build_day_itinerary's relax_score for full semantics.",
@@ -673,6 +702,8 @@ def _make_build_day_input(args: dict) -> BuildDayInput:
     return BuildDayInput(
         base_location=args["base_location"],
         region=args["region"],
+        subRegion=args.get("subRegion"),
+        subRegions=args.get("subRegions", []) or [],
         pace=args.get("pace", "balanced"),
         date=args.get("date"),
         start_time=args.get("start_time", "09:00"),
@@ -684,7 +715,7 @@ def _make_build_day_input(args: dict) -> BuildDayInput:
         travelling_with=args.get("travelling_with"),
         budget_band=args.get("budget_band"),
         max_drive_minutes_between_stops=int(args.get("max_drive_minutes_between_stops", 30)),
-        candidate_radius_km=float(args.get("candidate_radius_km", 50.0)),
+        candidate_radius_km=float(args.get("candidate_radius_km", 25.0)),
         relax_score=int(args.get("relax_score", 5)),
         include_doc_ids=args.get("include_doc_ids", []) or [],
         exclude_doc_ids=args.get("exclude_doc_ids", []) or [],
@@ -697,6 +728,8 @@ def _make_build_trip_input(args: dict) -> BuildTripInput:
         DayAnchor(
             base_location=a["base_location"],
             region=a["region"],
+            subRegion=a.get("subRegion"),
+            subRegions=a.get("subRegions"),
             date=a.get("date"),
             label=a.get("label"),
             pace=a.get("pace"),
@@ -704,6 +737,8 @@ def _make_build_trip_input(args: dict) -> BuildTripInput:
             place_subtypes=a.get("place_subtypes"),
             physical_intensity_max=a.get("physical_intensity_max"),
             relax_score=(int(a["relax_score"]) if a.get("relax_score") is not None else None),
+            include_doc_ids=(list(a["include_doc_ids"])
+                             if a.get("include_doc_ids") is not None else None),
             notes=a.get("notes"),
         )
         for a in args.get("day_anchors", [])
@@ -711,12 +746,14 @@ def _make_build_trip_input(args: dict) -> BuildTripInput:
     return BuildTripInput(
         day_anchors=anchors,
         pace=args.get("pace", "balanced"),
+        subRegion=args.get("subRegion"),
+        subRegions=args.get("subRegions", []) or [],
         themes=args.get("themes", []) or [],
         place_subtypes=args.get("place_subtypes", []) or [],
         physical_intensity_max=args.get("physical_intensity_max"),
         travelling_with=args.get("travelling_with"),
         max_drive_minutes_between_stops=int(args.get("max_drive_minutes_between_stops", 30)),
-        candidate_radius_km=float(args.get("candidate_radius_km", 50.0)),
+        candidate_radius_km=float(args.get("candidate_radius_km", 25.0)),
         relax_score=int(args.get("relax_score", 5)),
         enforce_no_repeats=bool(args.get("enforce_no_repeats", True)),
     )
