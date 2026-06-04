@@ -8,9 +8,17 @@ Resolution order for a given `name`:
      dispersed sub-regions like Hauraki Gulf Islands, Catlins, Fiordland —
      where the geographic mean lands between clusters but a single
      page-as-anchor gives a useful base.
-  2. Match against the suburb_place / subregion2 string inside aiMetadata
-     `location` of any page → that page's root `coordinates`.
-  3. Fallback: None (caller decides — error, ask user, or guess).
+  2. Exact / substring match against page titles in the region (diacritic-
+     tolerant via _strip_accents) → that page's root `coordinates`.
+  3. Fuzzy match against the same page-title pool via rapidfuzz
+     `token_set_ratio` (threshold ≥ 80) → that page's `coordinates`. Catches
+     verbose names the user/chatbot adds beyond the canonical title, e.g.
+     "Arataki Visitor Centre" → "Arataki", "Mt Eden Summit Track" → "Mt Eden".
+     Without this step, the verbose name falls through to step 4's region-
+     centroid fallback, which for Auckland lands on North Auckland (a
+     long-standing footgun — see HARD_RULE #14 in the system prompt).
+  4. Last-resort fallback: largest sub-region's densest-cluster anchor. Only
+     useful for genuine region-level base_location requests like "Auckland".
 
 Caches a tiny in-memory result per (name, region) pair for the session.
 """
@@ -28,6 +36,8 @@ _PKG_ROOT = Path(__file__).resolve().parent.parent
 if str(_PKG_ROOT) not in sys.path:
     sys.path.insert(0, str(_PKG_ROOT))
 
+from rapidfuzz import fuzz  # noqa: E402
+
 from sanity_client import SanityClient  # noqa: E402
 from registry import regions  # noqa: E402
 
@@ -44,6 +54,10 @@ _CLUSTER_NEIGHBOUR_KM = 15.0
 _CLUSTER_TIEBREAK_KM = 5.0
 # Below this page count, clustering is meaningless — fall back to mean.
 _CLUSTER_MIN_PAGES = 3
+# Minimum rapidfuzz token_set_ratio to accept a fuzzy page-title match.
+# 80 mirrors find_place_by_name's threshold — high enough to avoid spurious
+# matches, low enough to catch "Arataki Visitor Centre" → "Arataki" (~100).
+_FUZZY_PAGE_TITLE_THRESHOLD = 80
 
 
 def _strip_accents(s: str) -> str:
@@ -73,7 +87,7 @@ class ResolvedLocation:
     name: str
     lat: float
     lng: float
-    method: str             # "subregion_densest_cluster" | "subregion_mean" | "page_match" | "explicit"
+    method: str             # "subregion_densest_cluster" | "subregion_mean" | "page_match" | "page_fuzzy_match" | "region_fallback" | "explicit"
     confidence: float
 
 
@@ -127,13 +141,15 @@ def resolve(
 
         if candidates:
             needle = _strip_accents(name)
-            # Rank: exact title (normalised) > title-substring (normalised).
+            # Rank: exact title (normalised) > title-substring (normalised) >
+            # fuzzy title (rapidfuzz token_set_ratio ≥ 80).
             # Body-mention path is dead — we only ever check titles now.
             exact = [c for c in candidates
                      if _strip_accents(c.get("title") or "") == needle]
             title_sub = [c for c in candidates
                          if needle and needle in _strip_accents(c.get("title") or "")]
             best = None
+            method = "page_match"
             confidence = 0.0
             if exact:
                 best = exact[0]
@@ -141,6 +157,22 @@ def resolve(
             elif title_sub:
                 best = title_sub[0]
                 confidence = 0.55
+            else:
+                # Fuzzy fallback. token_set_ratio is robust to extra/missing
+                # words, which is what we want for verbose names: e.g.
+                # "Arataki Visitor Centre" vs page title "Arataki" → 100.
+                # Score against the normalised forms so macrons don't trip it.
+                scored = [
+                    (fuzz.token_set_ratio(needle, _strip_accents(c.get("title") or "")), c)
+                    for c in candidates
+                ]
+                scored = [s for s in scored if s[0] >= _FUZZY_PAGE_TITLE_THRESHOLD]
+                if scored:
+                    scored.sort(key=lambda x: -x[0])
+                    fuzzy_score, best = scored[0]
+                    method = "page_fuzzy_match"
+                    # Confidence 0.45 at threshold (80) → 0.65 at score 100.
+                    confidence = 0.45 + (fuzzy_score - _FUZZY_PAGE_TITLE_THRESHOLD) / 20 * 0.20
 
             if best:
                 coords = best.get("coordinates") or {}
@@ -149,7 +181,7 @@ def resolve(
                         name=best.get("title", name),
                         lat=float(coords["lat"]),
                         lng=float(coords["lng"]),
-                        method="page_match",
+                        method=method,
                         confidence=confidence,
                     )
 
@@ -286,7 +318,16 @@ if __name__ == "__main__":
         ("Hibiscus Coast", "Auckland"),         # subregion2-level — likely no direct subRegion match
         ("North Otago", "Otago"),               # exact subRegion name
         ("Bridge Point", "Otago"),              # tiny settlement — mentioned in aiMetadata
-        ("Nelson", "Nelson Tasman"),
+        ("Nelson", "Tasman"),                   # canonical region (was "Nelson Tasman", fixed v0.13.2)
+        # Verbose-name fuzzy fallback cases — should resolve via page_fuzzy_match
+        ("Arataki Visitor Centre", "Auckland"),  # canonical title is "Arataki" — fuzzy score ~100
+        ("Pūrākaunui Falls Lookout", "Otago"),   # canonical "Purakaunui Falls" — fuzzy + macron normalisation
+        # Known limitation: bilingual Māori/English page titles like
+        # "Mount Eden Maungawhau" don't fuzzy-match against an English-only
+        # verbose name + an "Mt" abbreviation ("Mt Eden Summit Track" → 44).
+        # Falls through to region_fallback. Workaround: chatbot follows
+        # HARD_RULE #14 and uses find_place_by_name first.
+        ("Mt Eden Summit Track",   "Auckland"),  # expected: region_fallback (documented limitation)
     ]
     for name, region in samples:
         r = resolve(name, region)
