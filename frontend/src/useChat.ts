@@ -60,6 +60,12 @@ export interface UseChatOptions {
   apiUrl: string;
   storageKey?: string;        // localStorage key for persistence
   onError?: (err: Error) => void;
+  /** Optional bucket of sanity_doc_ids loaded from the Tripideas trip tool.
+   *  When present, sent with every /chat request as `bucket_doc_ids` so the
+   *  backend can inject a "use these places" system block. */
+  bucketDocIds?: string[];
+  bucketTitles?: string[];
+  bucketCollectionName?: string;
 }
 
 export interface UseChatReturn {
@@ -128,6 +134,9 @@ export function useChat({
   apiUrl,
   storageKey = STORAGE_KEY_DEFAULT,
   onError,
+  bucketDocIds,
+  bucketTitles,
+  bucketCollectionName,
 }: UseChatOptions): UseChatReturn {
   const [messages, setMessages] = useState<ChatMessage[]>(() => loadHistory(storageKey));
   const [input, setInput] = useState("");
@@ -212,13 +221,24 @@ export function useChat({
       abortRef.current = controller;
 
       try {
-        // Build the messages payload (don't send the empty assistant placeholder)
-        const payload = {
+        // Build the messages payload (don't send the empty assistant placeholder).
+        // Bucket fields are only included when a bucket is loaded, so the
+        // wire format stays minimal for users without one.
+        const payload: Record<string, unknown> = {
           messages: [...messages, userMsg].map((m) => ({
             role: m.role,
             content: m.content,
           })),
         };
+        if (bucketDocIds && bucketDocIds.length > 0) {
+          payload.bucket_doc_ids = bucketDocIds;
+          if (bucketTitles && bucketTitles.length === bucketDocIds.length) {
+            payload.bucket_titles = bucketTitles;
+          }
+          if (bucketCollectionName) {
+            payload.bucket_collection_name = bucketCollectionName;
+          }
+        }
 
         const response = await fetch(apiUrl, {
           method: "POST",
@@ -263,7 +283,7 @@ export function useChat({
         );
       }
     },
-    [apiUrl, input, isStreaming, messages, onError],
+    [apiUrl, input, isStreaming, messages, onError, bucketDocIds, bucketTitles, bucketCollectionName],
   );
 
   return {

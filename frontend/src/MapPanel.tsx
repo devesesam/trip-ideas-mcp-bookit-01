@@ -226,9 +226,49 @@ export interface MapPanelProps {
 }
 
 export function MapPanel({ className = "" }: MapPanelProps) {
-  const { latestRoute, latestRouteId, isBuildingItinerary } = useChatContext();
+  const { latestRoute, latestRouteId, isBuildingItinerary, bucket } = useChatContext();
 
-  const route = latestRoute as FeatureCollection<Geometry, GeoProps> | null;
+  // When no itinerary route has been built yet, fall back to the user's
+  // bucket (if loaded) — gives the map immediate content on first paint
+  // instead of staring at NZ centred. As soon as a build_*_itinerary tool
+  // emits a real route, latestRoute wins automatically.
+  const { route, routeId } = useMemo<{
+    route: FeatureCollection<Geometry, GeoProps> | null;
+    routeId: string | null;
+  }>(() => {
+    if (latestRoute && latestRouteId) {
+      return {
+        route: latestRoute as unknown as FeatureCollection<Geometry, GeoProps>,
+        routeId: latestRouteId,
+      };
+    }
+    if (bucket && bucket.places.length > 0) {
+      const features: Feature<Geometry, GeoProps>[] = bucket.places
+        .filter(
+          (p) =>
+            p.coords && typeof p.coords.lat === "number" && typeof p.coords.lng === "number",
+        )
+        .map((p) => ({
+          type: "Feature",
+          geometry: {
+            type: "Point",
+            coordinates: [p.coords!.lng as number, p.coords!.lat as number],
+          },
+          properties: {
+            role: "place",
+            title: p.title,
+            settlement: p.subRegion ?? undefined,
+          },
+        }));
+      if (features.length === 0) return { route: null, routeId: null };
+      return {
+        route: { type: "FeatureCollection", features },
+        routeId: `bucket:${bucket.collection.id}`,
+      };
+    }
+    return { route: null, routeId: null };
+  }, [latestRoute, latestRouteId, bucket]);
+
   const hasRoute = !!route && Array.isArray(route.features) && route.features.length > 0;
 
   // Google Maps export URL. Null when there aren't enough points to route.
@@ -240,7 +280,7 @@ export function MapPanel({ className = "" }: MapPanelProps) {
   // Memoize the keyed GeoJSON layer so a new routeId remounts cleanly
   // (rather than diff-patching old features under new ones).
   const geojsonLayer = useMemo(() => {
-    if (!hasRoute || !latestRouteId) return null;
+    if (!hasRoute || !routeId) return null;
     const fc = route as FeatureCollection;
     // Three stacked layers, mounted bottom → top:
     //   1. fat transparent hit-area for the route lines (easy hover target)
@@ -249,20 +289,20 @@ export function MapPanel({ className = "" }: MapPanelProps) {
     return (
       <>
         <GeoJSON
-          key={`${latestRouteId}-hit`}
+          key={`${routeId}-hit`}
           data={fc}
           filter={isLineFeature as L.GeoJSONOptions["filter"]}
           style={routeHitStyle as L.StyleFunction}
           onEachFeature={bindRouteTooltip}
         />
         <GeoJSON
-          key={`${latestRouteId}-line`}
+          key={`${routeId}-line`}
           data={fc}
           filter={isLineFeature as L.GeoJSONOptions["filter"]}
           style={visibleLineStyle as L.StyleFunction}
         />
         <GeoJSON
-          key={`${latestRouteId}-pts`}
+          key={`${routeId}-pts`}
           data={fc}
           filter={isPointFeature as L.GeoJSONOptions["filter"]}
           pointToLayer={pointToLayer as L.GeoJSONOptions["pointToLayer"]}
@@ -270,7 +310,7 @@ export function MapPanel({ className = "" }: MapPanelProps) {
         />
       </>
     );
-  }, [hasRoute, latestRouteId, route]);
+  }, [hasRoute, routeId, route]);
 
   return (
     <div
@@ -288,7 +328,7 @@ export function MapPanel({ className = "" }: MapPanelProps) {
       >
         <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} />
         {geojsonLayer}
-        <FitBoundsOnRoute route={route} routeId={latestRouteId} />
+        <FitBoundsOnRoute route={route} routeId={routeId} />
       </MapContainer>
 
       {/* Open in Google Maps — top-right overlay, only when a route is visible */}

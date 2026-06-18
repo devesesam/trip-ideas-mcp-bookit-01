@@ -27,6 +27,7 @@
 
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { BucketPanel } from "./BucketPanel";
 import { ChatPanel } from "./ChatPanel";
 import { ChatWidget } from "./ChatWidget";
 import { ChatProvider } from "./ChatContext";
@@ -85,12 +86,30 @@ function mount() {
   const root = ReactDOM.createRoot(mountEl);
 
   if (mode === "embedded") {
-    // Side-by-side: chat (fixed ~420px on desktop) + map (fills remaining).
-    // Mobile: stacked vertically with map below the chat at min 40vh.
+    // Three-column layout on desktop: bucket (~280px) | chat (~420px) | map (flex).
+    // Mobile: stacked vertically — bucket collapsible at the top via <details>,
+    // chat in the middle, map below at min 40vh.
     root.render(
       <React.StrictMode>
         <ChatProvider apiUrl={apiUrl}>
           <div className="flex h-full w-full flex-col lg:flex-row">
+            {/* Bucket panel — desktop: always-visible left rail. Hidden on mobile here;
+                a collapsible version (below) is rendered for small screens only. */}
+            <div className="hidden lg:block lg:basis-[280px] lg:shrink-0 lg:border-r lg:border-brand-border lg:h-full">
+              <BucketPanel />
+            </div>
+            {/* Mobile bucket — collapsible accordion above the chat. */}
+            <details
+              className="lg:hidden border-b border-brand-border bg-brand-surface-alt"
+              open
+            >
+              <summary className="cursor-pointer list-none bg-brand-surface px-4 py-2 text-xs font-medium text-brand-text-muted">
+                Your bucket — tap to toggle
+              </summary>
+              <div className="h-[35vh]">
+                <BucketPanel />
+              </div>
+            </details>
             <div className="flex-1 min-h-0 lg:flex-none lg:basis-[420px] lg:shrink-0 lg:border-r lg:border-brand-border">
               <ChatPanel />
             </div>

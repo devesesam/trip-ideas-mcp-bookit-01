@@ -34,6 +34,9 @@ from tools.build_trip_itinerary import (  # noqa: E402
 from tools.find_place_by_name import (  # noqa: E402
     FindPlaceByNameInput, find_place_by_name,
 )
+from tools.get_nearby_places import (  # noqa: E402
+    GetNearbyPlacesInput, get_nearby_places,
+)
 from tools.get_place_summary import get_place_summary  # noqa: E402
 from tools.list_subregions import list_subregions  # noqa: E402
 from tools.refine_itinerary import RefineInput, refine_itinerary  # noqa: E402
@@ -163,6 +166,39 @@ SEARCH_PLACES_SCHEMA = {
             },
         },
         "required": ["region"],
+    },
+}
+
+
+GET_NEARBY_PLACES_SCHEMA = {
+    "name": "get_nearby_places",
+    "description": (
+        "Get the places near ONE specific place, for 'what's near X' / 'what can I "
+        "combine with X' / place-page 'nearby' lists. Editorial-first: it uses the "
+        "nearby attractions the article authors actually named, so it respects road "
+        "corridors and harbours (it won't suggest a beach across the harbour just "
+        "because it's close in a straight line). When a place has few editorial links "
+        "it tops up with nearby-by-distance results; each neighbor is tagged "
+        "source='editorial' or 'geographic'. Resolve the place's _id first with "
+        "find_place_by_name if you only have a name. This is NOT for region/theme "
+        "discovery — use search_places for that."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "sanity_doc_id": {
+                "type": "string",
+                "description": "The _id of the place (from find_place_by_name / search_places / itinerary results).",
+            },
+            "limit": {
+                "type": "integer",
+                "description": "Max neighbors to return (cards spec: min 4, max 8).",
+                "minimum": 1,
+                "maximum": 8,
+                "default": 8,
+            },
+        },
+        "required": ["sanity_doc_id"],
     },
 }
 
@@ -604,6 +640,7 @@ WEB_SEARCH_SCHEMA = {
 TOOLS = [
     SEARCH_PLACES_SCHEMA,
     GET_PLACE_SUMMARY_SCHEMA,
+    GET_NEARBY_PLACES_SCHEMA,
     BUILD_DAY_ITINERARY_SCHEMA,
     BUILD_TRIP_ITINERARY_SCHEMA,
     REFINE_ITINERARY_SCHEMA,
@@ -634,6 +671,14 @@ def dispatch_tool(name: str, args: dict, client: SanityClient | None = None) -> 
             out = search_places(inp, client=client)
         elif name == "get_place_summary":
             out = get_place_summary(args["sanity_doc_id"], client=client)
+        elif name == "get_nearby_places":
+            out = get_nearby_places(
+                GetNearbyPlacesInput(
+                    sanity_doc_id=args["sanity_doc_id"],
+                    limit=int(args.get("limit", 8)),
+                ),
+                client=client,
+            )
         elif name == "build_day_itinerary":
             inp = _make_build_day_input(args)
             out = build_day_itinerary(inp, client=client)

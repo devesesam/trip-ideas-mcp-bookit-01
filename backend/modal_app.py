@@ -30,12 +30,18 @@ image = (
 # --- Secrets ---
 # `tripideas-secrets`  — ANTHROPIC_API_KEY + SANITY_*
 # `google-maps-secret` — GOOGLE_MAPS_API_KEY (used by execution/services/google_maps.py)
+# `railway-secret`     — RAILWAY_DATABASE_URL (staging Postgres public URL — used
+#                        by execution/services/railway_client.py for bucket ingest).
+#                        READ-ONLY: the client sets session_readonly=True. See
+#                        directives/railway_bucket_schema.md. NEVER add a write
+#                        helper to railway_client.py without explicit approval.
 #
-# Both created via the Modal CLI / web UI. Listing them on the function
+# All created via the Modal CLI / web UI. Listing them on the function
 # decorator injects all keys as env vars in the container.
 SECRETS = [
     modal.Secret.from_name("tripideas-secrets"),
     modal.Secret.from_name("google-maps-secret"),
+    modal.Secret.from_name("railway-secret"),
 ]
 
 app = modal.App("tripideas-chat", image=image, secrets=SECRETS)
