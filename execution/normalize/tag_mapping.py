@@ -96,7 +96,8 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
     "Boardwalks":         _m(subtype=("walk",), intensity="easy",
                              accessibility={"steps_present": False, "wheelchair_accessible": "partial"},
                              notes="Boardwalks usually mean stepfree access, but verify per doc."),
-    "City Walks":         _m(subtype=("walk",), themes=("urban",), intensity="easy"),
+    # 'City Walks' retired 2026-06-18 (Douglas confirmed). Canonical urban
+    # walk tag is 'Urban Walks' (already mapped below).
     "Cliff Walks":        _m(subtype=("walk",), themes=("coastal", "scenic"), intensity="moderate",
                              accessibility={"weather_exposed": True}),
     "Coastal Walks":      _m(subtype=("walk",), themes=("coastal",), intensity="easy"),
@@ -124,7 +125,9 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
     "Tramps":             _m(subtype=("track",), themes=("adventure",), intensity="demanding",
                              notes="NZ-specific: longer / more rugged than a hike, often multi-day."),
     "Urban Walks":        _m(subtype=("walk",), themes=("urban",), intensity="easy"),
-    "Walks":              _m(subtype=("walk",), intensity="easy"),
+    # 'Walks' generic catch-all retired 2026-06-18 (Douglas confirmed).
+    # Use specific walk-type tags (Forest Walks, Coastal Walks, Short Walks,
+    # Urban Walks, etc.) which all exist as canonical Sanity tags.
 
     # ----- Natural Feature / Landscape Type ---------------------------------------
     "Beaches":            _m(subtype=("beach",), themes=("coastal",), suitability={"families": True}),
@@ -140,7 +143,9 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
                              notes="DOC/IDA designated dark-sky reserves (Mackenzie, Aoraki, etc.)"),
     "Exotic Forests":     _m(subtype=("forest",), themes=("forest",),
                              notes="Non-native plantation (pine, etc.) — distinct from native forest."),
-    "Forests":            _m(subtype=("forest",), themes=("forest", "nature")),
+    # 'Forests' generic catch-all retired 2026-06-18 (Douglas confirmed).
+    # Use specific forest-type tags (Beech Forests, Kauri Forests, Podocarp
+    # Forests, Exotic Forests, Rainforest) which all exist as canonical tags.
     "Fossil Sites":       _m(themes=("geological", "heritage")),
     "Geological Sites":   _m(themes=("geological",)),
     "Glacial Lakes":      _m(subtype=("lake",), themes=("water", "alpine", "scenic")),
@@ -187,10 +192,21 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
                                    "smaller town/suburban parks."),
     "Marine Reserves":    _m(subtype=("marine_reserve",), themes=("protected_area", "coastal", "wildlife")),
     "National Parks":     _m(subtype=("national_park",), themes=("protected_area", "nature")),
-    "Parks":              _m(subtype=("park",), themes=("protected_area",),
-                             notes="Generic; lower-priority subtype. Prefer National/Regional/Scenic when available."),
+    # 'Parks' generic catch-all retired 2026-06-18 (Douglas confirmed).
+    # Use specific park-type tags (National Parks, Regional Parks, City Parks,
+    # Town Parks, Scenic Reserves) which all exist as canonical tags.
     "Regional Parks":     _m(subtype=("regional_park",), themes=("protected_area", "nature")),
-    "Scenic Reserves":    _m(subtype=("scenic_reserve",), themes=("protected_area", "scenic")),
+    "Scenic Reserves":    _m(subtype=("scenic_reserve",),
+                             themes=("protected_area", "scenic", "family", "relaxation"),
+                             suitability={"families": True},
+                             accessibility={"facilities_level": "basic"},
+                             notes="Now also inherits the family/picnic-friendly signals from "
+                                   "the retired 'Picnic Areas' tag — Douglas confirmed the "
+                                   "Picnic Areas → Scenic Reserves rename was an intentional "
+                                   "meaning shift (2026-06-18). NZ scenic reserves are typically "
+                                   "DOC- or council-managed picnic-and-walk spots with toilets, "
+                                   "tables and parking, so the family/basic-facilities signals "
+                                   "transfer cleanly."),
     "Town Parks":         _m(subtype=("park",), themes=("urban", "family", "relaxation"),
                              suitability={"families": True},
                              notes="Smaller town and suburban parks (provincial NZ town greens, "
@@ -215,8 +231,9 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
     "Memorials":          _m(subtype=("memorial",), themes=("heritage", "cultural")),
     "Mining History":     _m(themes=("heritage",)),
     "Museums":            _m(subtype=("museum",), themes=("cultural", "heritage", "urban")),
-    "NZ History":         _m(themes=("heritage",),
-                             notes="Per primary prompt: do not apply if a more specific historic tag is used."),
+    # 'NZ History' generic catch-all retired 2026-06-18 (Douglas confirmed).
+    # Use specific tags (Cultural History, Māori History, Gold Mining History,
+    # Mining History, Historic Sites, Heritage Trails, etc.).
     "Public Art and Sculpture": _m(themes=("cultural", "urban")),
 
     # ----- Wildlife & Ecology -----------------------------------------------------
@@ -256,9 +273,15 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
     "Backcountry Huts":   _m(is_accommodation=True,
                              notes="DOC backcountry huts — accommodation content_kind."),
     "Camping":            _m(is_accommodation=True),
-    "Campsites":          _m(is_accommodation=True),
-    "DOC Campsites":      _m(is_accommodation=True),  # not in live taxonomy but present in primary prompt
-    "Campgrounds":        _m(is_accommodation=True),  # not in live taxonomy but present in primary prompt
+    # 'Campsites' generic retired 2026-06-18 (Douglas confirmed). 'Camping'
+    # (generic, mapped above) and 'DOC Campsites' (specific, mapped below)
+    # cover the canonical taxonomy.
+    "DOC Campsites":      _m(is_accommodation=True,
+                             notes="DOC-managed campsites. Currently unused in Sanity (0 page "
+                                   "uses as of 2026-06-18 audit) but tag still exists; kept "
+                                   "the mapping in case Douglas re-applies it."),
+    # 'Campgrounds' retired 2026-06-18 (Douglas confirmed). Use 'Camping' or
+    # 'DOC Campsites'.
     "Freedom Camping":    _m(is_accommodation=True,
                              notes="Self-contained vehicle camping under the Freedom Camping Act."),
 
@@ -279,19 +302,49 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
     "Biosecurity Access": _m(accessibility={"biosecurity_required": True}, seasonality="weather_sensitive",
                              notes="Often kauri-dieback or pest-free island access requirements."),
     "Boat Access":        _m(accessibility={"requires_boat": True}, themes=("remote",)),
-    "No Facilities":      _m(accessibility={"facilities_level": "none"}),
-    "Rough Terrain":      _m(intensity="demanding"),
-    "Seasonal Access":    _m(seasonality="weather_sensitive"),
-    "Steep Tracks":       _m(intensity="demanding", accessibility={"steps_present": True}),
-    "Swing Bridges":      _m(notes="Suspension footbridges — common on DOC tracks. Not a primary filter dimension."),
-    "Unmarked Track":     _m(intensity="demanding", accessibility={"unmarked": True}),
+    "Seasonal Access":    _m(seasonality="weather_sensitive",
+                             notes="Generic seasonal-access tag. Douglas is splitting this into "
+                                   "the more specific 'Seasonal Access for Roads' and 'Seasonal "
+                                   "Access for Trails' (definitions in tag_definitions.py, "
+                                   "drafted 2026-06-18 — Douglas to create the tag docs in "
+                                   "Sanity). Once those exist, this generic tag may be retired."),
+    # ----- Tags pending Sanity creation (Douglas to add) --------------------------
+    # Definitions live in execution/tags/tag_definitions.py; mappings below are
+    # ready so the chatbot wires them up the moment the tag docs exist in Sanity.
+    # Until then, the tag_mapping_parity audit will flag them as STALE — that's
+    # expected and intentional.
+    "4WD Recommended":    _m(accessibility={"4wd_recommended": True}, themes=("remote", "adventure"),
+                             notes="Soft advisory — the chatbot surfaces 'consider a 4WD' rather "
+                                   "than excluding the place for 2WD users. Distinct from "
+                                   "'Gravel Roads' (purely unsealed) and from the retired "
+                                   "legacy '4WD Access' tag (which was over-applied — see "
+                                   "tag_definitions.py commentary). Pending Sanity creation."),
+    "Seasonal Access for Roads":  _m(accessibility={"seasonal_road_access": True},
+                                     seasonality="weather_sensitive",
+                                     notes="Vehicle access restricted in some seasons (winter "
+                                           "snow closures, slip-prone after rain). Chatbot "
+                                           "filters out for trips in restricted season; "
+                                           "otherwise surfaces a 'check road status' caveat. "
+                                           "Pending Sanity creation."),
+    "Seasonal Access for Trails": _m(accessibility={"seasonal_trail_access": True},
+                                     seasonality="weather_sensitive",
+                                     notes="Foot/track access restricted in some seasons "
+                                           "(avalanche, spring melt, breeding season closures). "
+                                           "Chatbot filters out for trips in restricted season; "
+                                           "otherwise surfaces a 'check track status' caveat. "
+                                           "Pending Sanity creation."),
+    # 'No Facilities', 'Rough Terrain', 'Steep Tracks', 'Swing Bridges', and
+    # 'Unmarked Track' all retired 2026-06-18 (Douglas confirmed). These were
+    # secondary attribute tags that didn't make it into the canonical 86.
+    # Information they captured can still surface to the chatbot via
+    # description text or via the physical_intensity hint on other tags.
 
     # ----- Location / meta tags ---------------------------------------------------
-    "Auckland":           _m(is_location=True,
-                             notes="Tag taxonomy mixes locations with features. Location tags should set "
-                                   "location_normalized.region rather than themes."),
-    "Top 5":              _m(is_meta=True,
-                             notes="Editorial classification, not a feature tag."),
+    # 'Auckland' (location tag) and 'Top 5' (meta tag) both retired 2026-06-18
+    # (Douglas confirmed). Auckland was never really a tag — it's a region.
+    # Top 5 was an old editorial classification that's no longer applied.
+    # No remaining location or meta tags in the canonical 86; this whole
+    # section is intentionally empty for now.
 }
 
 

@@ -353,6 +353,118 @@ TAG_DEFINITIONS: list[dict] = [
             # negatives are city names — applied in LLM prompt only
         ],
     },
+    # ---------------------------------------------------------------------
+    # New tags pending Douglas creating them in Sanity (2026-06-18). Drafted
+    # definitions framed by chatbot use case — Sam approved this wording.
+    # Once Douglas creates each tag in Sanity, the tag_mapping_parity audit
+    # will go clean.
+    # ---------------------------------------------------------------------
+    {
+        "name": "4WD Recommended",
+        "definition": (
+            "A 2WD passenger car can make the trip in dry conditions, but a "
+            "4WD or AWD vehicle is genuinely useful — better clearance, "
+            "traction in wet, snow line, river fords, slippery clay tracks. "
+            "Distinct from places where 4WD is strictly required (those go "
+            "in description as a hard warning, not this tag). Distinct from "
+            "'Gravel Roads' which is purely about unsealed surfaces that any "
+            "2WD car copes with in fine weather. The chatbot uses this as a "
+            "soft advisory ('consider a 4WD'), not a hard exclusion."
+        ),
+        "positive_keywords": [
+            r"\b4wd\b",
+            r"\b4-?wheel[- ]?drive\b",
+            r"\bfour[- ]?wheel[- ]?drive\b",
+            r"\bawd\b",
+            r"\b4x4\b",
+            r"\bhigh clearance\b",
+            r"\briver crossing\b",
+            r"\bford(?:ing)? the\b",
+            r"\bslippery (?:clay|track|road)\b",
+            r"\bsnow chains? (?:required|recommended)\b",
+        ],
+        "negative_signals": [
+            "sealed road right to the door",
+            "accessible by 2WD",
+            "2WD friendly",
+            # 'gravel road' alone does NOT trigger this — that's 'Gravel Roads'
+        ],
+    },
+    {
+        "name": "Seasonal Access for Roads",
+        "definition": (
+            "Vehicle access to the place is restricted or unsafe for part of "
+            "the year — winter snow closures (Crown Range Road, Milford Road "
+            "alerts), snow gates that close overnight or in storms, road "
+            "sections regularly slip-prone after heavy rain, washout-prone "
+            "fords, ferry-only access with seasonal schedules. The chatbot "
+            "uses this to filter out the place for trips in the restricted "
+            "season, or to surface a 'check road status / NZTA Journey "
+            "Planner before you go' caveat otherwise. Distinct from "
+            "'Seasonal Access for Trails' (foot/track access) and the "
+            "generic 'Seasonal Access' (which we may retire once these two "
+            "are in)."
+        ),
+        "positive_keywords": [
+            r"\bsnow gate\b",
+            r"\bsnow chains? required\b",
+            r"\bsnow chains? recommended\b",
+            r"\broad closure\b",
+            r"\bwinter closure\b",
+            r"\bclosed (?:in )?winter\b",
+            r"\bcrown range\b",
+            r"\bmilford road\b",
+            r"\bslip[- ]?prone\b",
+            r"\bwashout\b",
+            r"\bseasonal ferry\b",
+            r"\bsummer only road\b",
+            r"\bavalanche risk\b.*\broad\b",
+        ],
+        "negative_signals": [
+            # walking-only seasonality belongs in 'Seasonal Access for Trails'
+            "track closed in winter",
+            "alpine track season",
+        ],
+    },
+    {
+        "name": "Seasonal Access for Trails",
+        "definition": (
+            "Walking/tramping access to the place is restricted or unsafe for "
+            "part of the year — alpine sections closed by avalanche risk "
+            "(Routeburn, Greenstone alpine portions), river crossings unsafe "
+            "in spring melt, boggy and impassable in winter, kauri-dieback "
+            "rāhui, lambing closures on private-easement tracks, breeding "
+            "season closures (sea bird colonies, fur seals). The chatbot uses "
+            "this to filter the place out for trips in the restricted season, "
+            "or to surface a 'check track status / DOC alert' caveat. "
+            "Distinct from 'Seasonal Access for Roads' (vehicle access) and "
+            "the generic 'Seasonal Access' (which we may retire once these "
+            "two are in)."
+        ),
+        "positive_keywords": [
+            r"\bavalanche\b",
+            r"\bavalanche season\b",
+            r"\balpine season\b",
+            r"\bclosed (?:in )?winter\b",
+            r"\bclosed for winter\b",
+            r"\briver crossing\b.*\b(?:flood|unsafe|spring)",
+            r"\bspring melt\b",
+            r"\bboggy\b",
+            r"\brāhui\b",
+            r"\brahui\b",
+            r"\bkauri dieback\b.*\bclosure\b",
+            r"\blambing\b",
+            r"\bbreeding season\b",
+            r"\bbird (?:nesting|breeding)\b",
+            r"\bfur seal (?:breeding|colony closure)\b",
+        ],
+        "negative_signals": [
+            # vehicle-only seasonality belongs in 'Seasonal Access for Roads'
+            "snow gate",
+            "road closure",
+            "winter road",
+        ],
+    },
 ]
 
 
