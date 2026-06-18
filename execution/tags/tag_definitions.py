@@ -2210,7 +2210,9 @@ TAG_DEFINITIONS: list[dict] = [
 ]
 
 
-TAG_NAMES_15: list[str] = [t["name"] for t in TAG_DEFINITIONS]
+TAG_NAMES: list[str] = [t["name"] for t in TAG_DEFINITIONS]
+# Backwards-compat alias from the old 15-tag pass — kept so nothing imports break.
+TAG_NAMES_15 = TAG_NAMES
 
 
 def get_definition(name: str) -> dict | None:
