@@ -197,16 +197,12 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
     # Town Parks, Scenic Reserves) which all exist as canonical tags.
     "Regional Parks":     _m(subtype=("regional_park",), themes=("protected_area", "nature")),
     "Scenic Reserves":    _m(subtype=("scenic_reserve",),
-                             themes=("protected_area", "scenic", "family", "relaxation"),
-                             suitability={"families": True},
-                             accessibility={"facilities_level": "basic"},
-                             notes="Now also inherits the family/picnic-friendly signals from "
-                                   "the retired 'Picnic Areas' tag — Douglas confirmed the "
-                                   "Picnic Areas → Scenic Reserves rename was an intentional "
-                                   "meaning shift (2026-06-18). NZ scenic reserves are typically "
-                                   "DOC- or council-managed picnic-and-walk spots with toilets, "
-                                   "tables and parking, so the family/basic-facilities signals "
-                                   "transfer cleanly."),
+                             themes=("protected_area", "scenic"),
+                             notes="DOC- or council-gazetted Scenic Reserve under the Reserves "
+                                   "Act. Sam decided 2026-06-18 to keep this distinct from the "
+                                   "retired 'Picnic Areas' tag rather than inheriting its "
+                                   "family / basic-facilities signals — the underlying concepts "
+                                   "are different even if Sanity merged the page set."),
     "Town Parks":         _m(subtype=("park",), themes=("urban", "family", "relaxation"),
                              suitability={"families": True},
                              notes="Smaller town and suburban parks (provincial NZ town greens, "

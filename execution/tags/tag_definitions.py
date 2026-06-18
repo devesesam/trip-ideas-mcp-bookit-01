@@ -1712,23 +1712,27 @@ TAG_DEFINITIONS: list[dict] = [
     {
         "name": "Scenic Reserves",
         "definition": (
-            "DOC-managed scenic reserves — protected areas, often with picnic "
-            "amenities, walking tracks, family-friendly access. NB: Sanity "
-            "renamed the old 'Picnic Areas' tag pages into Scenic Reserves "
-            "(intentional meaning shift confirmed 2026-06-18), so this tag now "
-            "covers picnic / family use as well as scenic value."
+            "DOC- or council-gazetted Scenic Reserve — a legally protected area "
+            "set aside for its scenic, scientific, or natural value under the "
+            "Reserves Act. Distinct from National Parks (larger, DOC-only) and "
+            "Regional Parks (local-authority managed for recreation). Picnic "
+            "areas / day-use spots are NOT the same concept and should not "
+            "trigger this tag on their own."
         ),
         "positive_keywords": [
             r"\bscenic reserve\b",
             r"\bscenic recreation reserve\b",
             r"\bdoc reserve\b",
             r"\bscenic protected\b",
-            r"\bpicnic area\b",  # historical Picnic Areas → Scenic Reserves
-            r"\bpicnic spot\b",
-            r"\bpicnic table\b",
-            r"\bday[- ]?use area\b",
+            r"\breserves act\b",
+            r"\bgazetted reserve\b",
         ],
-        "negative_signals": [],
+        "negative_signals": [
+            "picnic area",  # picnic ≠ scenic reserve
+            "picnic spot",
+            "regional park",
+            "national park",
+        ],
     },
     {
         "name": "Sea Caves",
