@@ -456,9 +456,14 @@ def _build_bucket_system_block(
 
 The user is opening the chat with a Tripideas bucket {name_clause}already loaded.
 A "bucket" is a list of places they curated on Tripideas.nz before starting
-this conversation. The bucket panel to the left of the chat shows them as
-cards; the map already has them as pins. You do NOT need to call
-`render_places_on_map` to introduce them — that's already done visually.
+this conversation.
+
+UI positions (refer to these correctly when talking to the user):
+- The bucket panel is on the **left side** of the chat (cards listing the saved places).
+- The map is on the **right side** of the chat (the same places already drawn as pins).
+- You (the chat) sit in the **middle**.
+
+You do NOT need to call `render_places_on_map` to introduce these places — they're already visible to the user in both the left panel and on the right-hand map.
 
 Bucket contents ({len(doc_ids)} places):
 {bucket_list}

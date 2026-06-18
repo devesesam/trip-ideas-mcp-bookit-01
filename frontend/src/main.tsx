@@ -86,16 +86,17 @@ function mount() {
   const root = ReactDOM.createRoot(mountEl);
 
   if (mode === "embedded") {
-    // Three-column layout on desktop: bucket (~280px) | chat (~420px) | map (flex).
-    // Mobile: stacked vertically — bucket collapsible at the top via <details>,
-    // chat in the middle, map below at min 40vh.
+    // Three-column layout on desktop: bucket | chat | map, each taking
+    // exactly 1/3 of the viewport (lg:flex-1 lg:basis-0 + min-w-0 to
+    // prevent content forcing overflow). Mobile: stacked vertically with
+    // a collapsible bucket accordion above the chat and the map at bottom.
     root.render(
       <React.StrictMode>
         <ChatProvider apiUrl={apiUrl}>
           <div className="flex h-full w-full flex-col lg:flex-row">
-            {/* Bucket panel — desktop: always-visible left rail. Hidden on mobile here;
+            {/* Bucket panel — desktop: 1/3 left rail. Hidden on mobile here;
                 a collapsible version (below) is rendered for small screens only. */}
-            <div className="hidden lg:block lg:basis-[280px] lg:shrink-0 lg:border-r lg:border-brand-border lg:h-full">
+            <div className="hidden lg:flex lg:flex-1 lg:basis-0 lg:min-w-0 lg:border-r lg:border-brand-border">
               <BucketPanel />
             </div>
             {/* Mobile bucket — collapsible accordion above the chat. */}
@@ -110,10 +111,10 @@ function mount() {
                 <BucketPanel />
               </div>
             </details>
-            <div className="flex-1 min-h-0 lg:flex-none lg:basis-[420px] lg:shrink-0 lg:border-r lg:border-brand-border">
+            <div className="flex-1 min-h-0 lg:flex-1 lg:basis-0 lg:min-w-0 lg:border-r lg:border-brand-border">
               <ChatPanel />
             </div>
-            <div className="flex-1 min-h-[40vh] lg:min-h-0">
+            <div className="flex-1 min-h-[40vh] lg:flex-1 lg:basis-0 lg:min-w-0 lg:min-h-0">
               <MapPanel />
             </div>
           </div>

@@ -14,7 +14,8 @@ Design principles (carried from the build plan):
 - Don't run a tool just because you can — if the user is just chatting, chat.
 """
 
-SYSTEM_PROMPT_VERSION = "0.16.0"  # 2026-06-18: new get_nearby_places tool — editorial-first "what's near THIS place" backed by the nearby-place graph (registry/nearby_graph.py), built from each page's aiMetadata.nearby_places. Routing guidance added (use it, not search_places, for "what's near X"); falls back to distance-based results for sparse pages, tagged source=editorial|geographic.
+SYSTEM_PROMPT_VERSION = "0.16.1"  # 2026-06-18: pin UI positions in MAP_PANEL_AWARENESS + BUCKET_AWARENESS + the dynamic per-request bucket block — bucket is LEFT, chat is MIDDLE, map is RIGHT. Was: chat could call the map "on the left" because earlier copy only said "right next to the chat" without specifying which side. Pairs with the frontend going to a 3-equal-column layout (lg:flex-1 lg:basis-0 each) instead of fixed widths.
+# 0.16.0 — 2026-06-18: new get_nearby_places tool — editorial-first "what's near THIS place" backed by the nearby-place graph (registry/nearby_graph.py), built from each page's aiMetadata.nearby_places. Routing guidance added (use it, not search_places, for "what's near X"); falls back to distance-based results for sparse pages, tagged source=editorial|geographic.
 # 0.15.0 — 2026-06-18: bucket-aware planning — new BUCKET_AWARENESS section + dynamic per-request system block when bucket_doc_ids present on the request. Routes bucket users straight to include_doc_ids on build_*_itinerary (skipping search_places), backed by GET /bucket reading FavCollection from Railway (read-only). See directives/railway_bucket_schema.md.
 # 0.13.3 — 2026-06-04: HARD_RULE #9 extended — `max_drive_minutes_between_stops` now paired with `candidate_radius_km` in a scope→values table (city day → 30 default; road-trip day → 60–90; sparse-region day → 60). Includes a fallback rule: if build_day returns empty, retry once at drive cap 60 before giving up. Tool schemas got matching descriptions.
 
@@ -221,9 +222,13 @@ the same fields visible.
 MAP_PANEL_AWARENESS = """
 THE MAP PANEL (important — read this before saying "I can't show that")
 
-A live map is rendered RIGHT NEXT TO the chat window. The user sees it
-constantly. It is not a feature you have to imagine — it is part of the UI
-and you can put things on it.
+A live map is rendered **on the right side of the chat window** (or below
+the chat on mobile). The user sees it constantly. It is not a feature you
+have to imagine — it is part of the UI and you can put things on it.
+
+When you mention the map in conversation, refer to it as "the map on the
+right" (or just "the map") — never "on the left", which is where the
+bucket panel lives.
 
 How the map updates:
 
@@ -289,10 +294,16 @@ second system block, say plainly that no bucket is loaded for this
 session and ask them to either name the places they want or open the
 chat from their trip tool with the bucket attached.
 
+UI POSITIONS (so you can refer to them correctly when talking to the user):
+- Bucket panel: **left side** of the chat (or collapsible accordion above the
+  chat on mobile)
+- Chat window (you): **middle**
+- Map: **right side** of the chat (or below the chat on mobile)
+
 Quick rules of thumb (full detail lives in the dynamic block):
 - Bucket present → use `include_doc_ids` on build_*_itinerary, NEVER search_places
 - Bucket present → counter-prompt for pace/party/purpose first (HARD_RULE #11)
-- Bucket pins are auto-drawn on the map by the frontend; no render_places_on_map needed at session start
+- Bucket pins are auto-drawn on the map (to the right) by the frontend; no render_places_on_map needed at session start
 - A bucket-panel on the left of the chat shows the user the same list — never imply you can't see it
 """.strip()
 
