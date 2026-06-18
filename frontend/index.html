@@ -52,7 +52,7 @@
       main.page {
         max-width: var(--page-max);
         margin: 0 auto;
-        padding: 48px 24px;
+        padding: 48px 24px 24px;
       }
       h1.page-title {
         font-size: clamp(2rem, 5vw, 3rem);
@@ -67,9 +67,18 @@
         margin: 0 0 32px;
         line-height: 1.55;
       }
+      /* The chat lives in a full-bleed section below the editorial intro
+         so the three panels (bucket | chat | map) can spread across the
+         whole viewport width. Outer padding gives it breathing room on
+         very wide displays. */
+      section.chat-section {
+        padding: 0 24px 48px;
+      }
       .chat-frame {
-        height: 70vh;
-        min-height: 520px;
+        max-width: 1800px;
+        margin: 0 auto;
+        height: 75vh;
+        min-height: 560px;
         border: 1px solid #cdcdcd;
         border-radius: 0.5rem;
         overflow: hidden;
@@ -111,7 +120,9 @@
         from Trip Ideas content — places, walks, drives, and hidden gems
         across Aotearoa.
       </p>
+    </main>
 
+    <section class="chat-section">
       <div class="chat-frame">
         <!-- The widget bundle mounts ChatPanel into this div. -->
         <div
@@ -120,7 +131,7 @@
           style="height: 100%;"
         ></div>
       </div>
-    </main>
+    </section>
 
     <footer class="demo-meta">
       Demo page · API endpoint: <code id="api-display">resolved at runtime</code>
