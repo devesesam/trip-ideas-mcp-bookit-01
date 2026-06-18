@@ -22,28 +22,17 @@ Each entry has:
 from __future__ import annotations
 
 TAG_DEFINITIONS: list[dict] = [
-    {
-        "name": "4WD Access",
-        "definition": (
-            "The place is most appropriately reached by 4WD/AWD vehicle, OR an "
-            "unsealed/rough vehicle access is a defining feature visitors should "
-            "plan for. Sealed-road places with mere mention of a 4WD side-trip "
-            "do NOT qualify."
-        ),
-        "positive_keywords": [
-            r"\b4wd\b",
-            r"\b4-?wheel[- ]?drive\b",
-            r"\bfour[- ]?wheel[- ]?drive\b",
-            r"\bawd\b",
-            r"\bunsealed road\b",
-            r"\bgravel road\b",
-            r"\b4x4\b",
-        ],
-        "negative_signals": [
-            "sealed road right to the door",
-            "accessible by 2WD",
-        ],
-    },
+    # '4WD Access' entry retired 2026-06-18. Douglas confirmed the tag has
+    # been split into:
+    #   - 'Gravel Roads' (apply when access is unsealed/gravel — most cases
+    #     the old '4WD Access' was wrongly used for).
+    #   - '4WD Recommended' (forthcoming — definition TBD with Douglas) for
+    #     places where a 4WD genuinely makes a difference.
+    # The old definition's positive_keywords correctly flagged gravel-road
+    # access ("\bgravel road\b" etc.) but the conclusion "4WD Access" was
+    # almost always wrong — confirmed root cause of Douglas's over-application
+    # complaint. Re-tag pass will rebuild from canonical 86 tags including
+    # the new replacements.
     {
         "name": "Beech Forests",
         "definition": (
@@ -207,30 +196,12 @@ TAG_DEFINITIONS: list[dict] = [
             "glacial origin",
         ],
     },
-    {
-        "name": "Historical Trails",
-        "definition": (
-            "A trail/track whose primary purpose is interpreting human history "
-            "along the route — gold-mining tramways, old coach roads, war "
-            "trails, surveyor routes. Distinct from 'Heritage Trails' (broader: "
-            "any trail with heritage signage or named after heritage). Use this "
-            "ONLY when the trail itself is the historical artefact."
-        ),
-        "positive_keywords": [
-            r"\bhistorical trail\b",
-            r"\bhistoric trail\b",
-            r"\bgold[- ]?mining\b",
-            r"\bgoldfield\b",
-            r"\bbattery\b",
-            r"\bcoach road\b",
-            r"\bold coach\b",
-            r"\bsurveyor[s']? route\b",
-            r"\bpack track\b",
-            r"\btramway\b",
-            r"\bwagon road\b",
-        ],
-        "negative_signals": [],
-    },
+    # 'Historical Trails' entry retired 2026-06-18. Canonical Sanity tag is
+    # 'Heritage Trails' — the live taxonomy doesn't carry a separate
+    # 'Historical Trails' concept. The keyword stems (gold-mining, coach
+    # road, tramway, etc.) are still valuable signals — they'll roll into
+    # the 'Heritage Trails' definition when we extend tag_definitions.py
+    # to all 86 tags in Workstream B1.
     {
         "name": "Māori History",
         "definition": (

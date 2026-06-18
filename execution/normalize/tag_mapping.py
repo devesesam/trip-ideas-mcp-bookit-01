@@ -105,19 +105,21 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
                              notes="DOC Great Walks — multi-day premier tramping routes."),
     "Heritage Trails":    _m(subtype=("walk",), themes=("heritage", "cultural"), intensity="easy"),
     "Hikes":              _m(subtype=("walk",), themes=("adventure",), intensity="moderate"),
-    "Historical Trails":  _m(subtype=("walk",), themes=("heritage", "cultural"), intensity="easy",
-                             notes="Synonym of Heritage Trails (per corpus_audit_2026-04-27 duplicates)."),
-    "Lakeside Walk":      _m(subtype=("walk",), themes=("water", "scenic"), intensity="easy"),
+    # 'Historical Trails' synonym removed (2026-06-18 audit) — canonical is
+    # 'Heritage Trails'.
+    "Lake and River Walks": _m(subtype=("walk",), themes=("water", "scenic"), intensity="easy",
+                             notes="Renamed from 'Lakeside Walk' (2026-06-18 audit) — tag now "
+                                   "covers river-bank walks too."),
     "Multi-Day Walks":    _m(subtype=("track",), themes=("adventure",), intensity="demanding"),
     "Night Walks":        _m(subtype=("walk",), time_of_day="night",
                              notes="Often glow-worm walks or bioluminescence."),
-    "Scenic Drive":       _m(subtype=("scenic_drive",), themes=("scenic",), intensity="none"),
-    "Scenic Drives":      _m(subtype=("scenic_drive",), themes=("scenic",), intensity="none",
-                             notes="Synonym of Scenic Drive (per corpus_audit_2026-04-27 duplicates)."),
+    # 'Scenic Drive' (singular) synonym removed (2026-06-18 audit) — page
+    # `_key=tag-scenic-drive` confirms Sanity collapsed to 'Scenic Drives'.
+    "Scenic Drives":      _m(subtype=("scenic_drive",), themes=("scenic",), intensity="none"),
     "Scenic Loops":       _m(subtype=("walk",), themes=("scenic",), intensity="easy"),
     "Short Walks":        _m(subtype=("walk",), intensity="easy", suitability={"families": True}),
-    "Te Araroa":          _m(subtype=("track",), themes=("adventure",), intensity="demanding",
-                             notes="Synonym of Te Araroa Trail (per corpus_audit_2026-04-27 duplicates)."),
+    # 'Te Araroa' synonym removed (2026-06-18 audit) — canonical is
+    # 'Te Araroa Trail'.
     "Te Araroa Trail":    _m(subtype=("track",), themes=("adventure",), intensity="demanding"),
     "Tramps":             _m(subtype=("track",), themes=("adventure",), intensity="demanding",
                              notes="NZ-specific: longer / more rugged than a hike, often multi-day."),
@@ -128,8 +130,12 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
     "Beaches":            _m(subtype=("beach",), themes=("coastal",), suitability={"families": True}),
     "Beech Forests":      _m(subtype=("forest",), themes=("forest", "nature"),
                              notes="Native NZ beech (nothofagus) — mainly South Island."),
-    "Coastal Cliffs":     _m(subtype=("cliff",), themes=("coastal", "scenic"),
-                             accessibility={"weather_exposed": True}),
+    "Cliffs":             _m(subtype=("cliff",), themes=("scenic",),
+                             accessibility={"weather_exposed": True},
+                             notes="Renamed from 'Coastal Cliffs' (2026-06-18 audit). "
+                                   "Tag now covers any cliffs (inland gorges, alpine drops, "
+                                   "coastal headlands) — themes intentionally broader than "
+                                   "coastal-only."),
     "Dark Sky Places":    _m(themes=("scenic",), time_of_day="night",
                              notes="DOC/IDA designated dark-sky reserves (Mackenzie, Aoraki, etc.)"),
     "Exotic Forests":     _m(subtype=("forest",), themes=("forest",),
@@ -151,21 +157,46 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
                              notes="Native NZ podocarps (rimu, totara, kahikatea) — wet lowland forest."),
     "Rainforest":         _m(subtype=("forest",), themes=("forest", "nature")),
     "Rivers":             _m(subtype=("river",), themes=("water",)),
+    "Caves":              _m(themes=("geological",),
+                             notes="General caves (limestone Waitomo-style, lava tubes, "
+                                   "inland karst). Distinct from 'Sea Caves' which is "
+                                   "coastal wave-carved. Added 2026-06-18 audit — was a "
+                                   "high-traffic unmapped tag (21 page uses)."),
     "Sea Caves":          _m(subtype=("sea_cave",), themes=("coastal", "geological"),
-                             seasonality="tide_sensitive"),
-    "Tidal Lagoons":      _m(subtype=("lagoon",), themes=("coastal", "water"),
-                             seasonality="tide_sensitive"),
-    "Volcanic Landscapes":_m(themes=("geological",)),
+                             seasonality="tide_sensitive",
+                             notes="Coastal wave-carved sea caves only (Cathedral Cove style). "
+                                   "Currently zero page uses in Sanity — Douglas may have "
+                                   "re-categorised pages to 'Caves'. Kept the mapping in "
+                                   "case the tag is re-used; if Douglas retires it, remove."),
+    # 'Tidal Lagoons' synonym removed (2026-06-18 audit) — page
+    # `_key=tag-tidal-lagoons` confirms Sanity collapsed it into 'Wetlands'.
+    # Note: this is a meaning broadening (lagoons → all wetlands).
+    "Volcanos":           _m(subtype=("mountain",), themes=("geological", "scenic"),
+                             notes="Renamed from 'Volcanic Landscapes' (2026-06-18 audit). "
+                                   "Now covers cones, craters, lava fields — added 'mountain' "
+                                   "subtype hint since most NZ volcanos are cone-shaped."),
     "Waterfalls":         _m(subtype=("waterfall",), themes=("water", "scenic")),
     "Wetlands":           _m(subtype=("wetland",), themes=("water", "nature", "wildlife")),
 
     # ----- Protected Places & Reserves --------------------------------------------
+    "City Parks":         _m(subtype=("park",), themes=("urban", "family", "relaxation"),
+                             suitability={"families": True},
+                             notes="Inner-city public parks (Auckland Domain, Albert Park style). "
+                                   "Added 2026-06-18 audit — was a high-traffic unmapped tag "
+                                   "(129 page uses). Distinct from 'Town Parks' which is "
+                                   "smaller town/suburban parks."),
     "Marine Reserves":    _m(subtype=("marine_reserve",), themes=("protected_area", "coastal", "wildlife")),
     "National Parks":     _m(subtype=("national_park",), themes=("protected_area", "nature")),
     "Parks":              _m(subtype=("park",), themes=("protected_area",),
                              notes="Generic; lower-priority subtype. Prefer National/Regional/Scenic when available."),
     "Regional Parks":     _m(subtype=("regional_park",), themes=("protected_area", "nature")),
     "Scenic Reserves":    _m(subtype=("scenic_reserve",), themes=("protected_area", "scenic")),
+    "Town Parks":         _m(subtype=("park",), themes=("urban", "family", "relaxation"),
+                             suitability={"families": True},
+                             notes="Smaller town and suburban parks (provincial NZ town greens, "
+                                   "village reserves). Added 2026-06-18 audit — was a "
+                                   "high-traffic unmapped tag (71 page uses). Distinct from "
+                                   "'City Parks' which is bigger-city inner-urban parks."),
 
     # ----- Historical & Cultural --------------------------------------------------
     "Architecture":       _m(themes=("cultural", "heritage", "urban")),
@@ -175,11 +206,12 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
                              notes="NZ gold-rush era sites — Otago/West Coast."),
     "Heritage Precincts": _m(subtype=("heritage_precinct",), themes=("heritage", "cultural", "urban")),
     "Historic Sites":     _m(subtype=("historic_site",), themes=("heritage",)),
-    "Historical Sites":   _m(subtype=("historic_site",), themes=("heritage",),
-                             notes="Synonym of Historic Sites (per corpus_audit_2026-04-27 duplicates)."),
+    # 'Historical Sites' synonym removed (2026-06-18 audit) — canonical is
+    # 'Historic Sites' (no adjective form in live Sanity).
     "Local Legends & Myths": _m(themes=("cultural",)),
-    "Maori History":      _m(themes=("cultural", "heritage"),
-                             notes="Live tag uses 'Maori' (no macron). 'Māori' may also appear in source text."),
+    "Māori History":      _m(themes=("cultural", "heritage"),
+                             notes="Live tag uses macron 'Māori' (canonical as of 2026-06-18 audit). "
+                                   "Prior 'Maori History' key was stale and would silently miss."),
     "Memorials":          _m(subtype=("memorial",), themes=("heritage", "cultural")),
     "Mining History":     _m(themes=("heritage",)),
     "Museums":            _m(subtype=("museum",), themes=("cultural", "heritage", "urban")),
@@ -198,7 +230,8 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
 
     # ----- Activities & User Appeal -----------------------------------------------
     "Cycle Trails":       _m(subtype=("cycle_trail",), themes=("adventure",), intensity="moderate"),
-    "Cycling":            _m(themes=("adventure",), is_activity=True),
+    # 'Cycling' synonym removed (2026-06-18 audit) — page `_key=tag-cycling`
+    # references confirm Sanity collapsed it into 'Cycle Trails'.
     "Family Friendly":    _m(themes=("family",), suitability={"families": True}),
     "Fishing":            _m(themes=("adventure",), is_activity=True),
     "Hidden Gems":        _m(themes=("remote",)),
@@ -206,9 +239,12 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
     "Lookouts":           _m(subtype=("lookout",), themes=("scenic",)),
     "Off The Beaten Track": _m(themes=("remote",)),
     "Photography Spots":  _m(themes=("scenic",)),
-    "Picnic Areas":       _m(subtype=("picnic_spot",), themes=("family", "relaxation"),
-                             suitability={"families": True},
-                             accessibility={"facilities_level": "basic"}),
+    # 'Picnic Areas' removed (2026-06-18 audit). Page `_key=tag-picnic-areas`
+    # references now point to 'Scenic Reserves' — but this is a meaning shift
+    # (picnic spots ≠ scenic reserves), NOT a synonym. Flagged to Douglas in
+    # the catch-up email for confirmation. Worth a re-tag if he intends them
+    # as distinct concepts; the family/basic-facilities signals are currently
+    # lost when collapsed into Scenic Reserves.
     "Quiet Spots":        _m(themes=("remote", "relaxation")),
     "Remote Locations":   _m(themes=("remote",)),
     "Sunrise Spots":      _m(themes=("scenic",), time_of_day="morning"),
@@ -227,9 +263,19 @@ TAG_MAPPINGS: dict[str, TagMapping] = {
                              notes="Self-contained vehicle camping under the Freedom Camping Act."),
 
     # ----- Secondary-only attribute tags ------------------------------------------
-    "4WD Access":         _m(accessibility={"requires_4wd": True}, intensity="moderate"),
-    "4WD Routes":         _m(subtype=("scenic_drive",), accessibility={"requires_4wd": True},
-                             intensity="moderate", themes=("adventure",)),
+    # '4WD Access' and '4WD Routes' retired (2026-06-18 audit, confirmed by
+    # Douglas). The previous LLM tag-application run over-applied them to
+    # gravel-road places that aren't actually 4WD-required. Replaced by:
+    #   - 'Gravel Roads' (mapped below) for unsealed-access places.
+    #   - '4WD Recommended' (forthcoming — Douglas to draft definition) for
+    #     places that genuinely benefit from a 4WD vehicle.
+    "Gravel Roads":       _m(accessibility={"gravel_road": True},
+                             notes="Unsealed gravel/dirt road access. Most 2WD cars cope OK in "
+                                   "dry weather; expect dust, slower speeds, and possible "
+                                   "degradation in wet. NOT a 4WD-required signal — distinct "
+                                   "from the forthcoming '4WD Recommended' tag. Added "
+                                   "2026-06-18 audit — replaces the over-applied legacy "
+                                   "'4WD Access' tag (80 page uses)."),
     "Biosecurity Access": _m(accessibility={"biosecurity_required": True}, seasonality="weather_sensitive",
                              notes="Often kauri-dieback or pest-free island access requirements."),
     "Boat Access":        _m(accessibility={"requires_boat": True}, themes=("remote",)),
