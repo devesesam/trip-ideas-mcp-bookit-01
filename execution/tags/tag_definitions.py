@@ -938,29 +938,70 @@ TAG_DEFINITIONS: list[dict] = [
     {
         "name": "Hidden Gems",
         "definition": (
-            "Lesser-known places explicitly framed as off-the-radar in the "
-            "article — 'few visitors', 'overlooked', 'locals' secret', 'don't "
-            "see on Instagram'. Self-deprecating 'underrated' or 'should be "
-            "more popular' framing qualifies. Genuinely popular places don't, "
-            "even if 'hidden' appears in the prose."
+            "UMBRELLA tag for less-visited places in any of four senses — "
+            "(1) under-promoted ('locals' secret', 'overlooked', 'underrated'), "
+            "(2) out-of-the-way (end of a gravel road, walk-in-only, "
+            "off-the-beaten-track), (3) peaceful and low-traffic (secluded "
+            "bays, restful tracks, tranquil spots), or (4) geographically "
+            "remote (East Cape, Catlins ends, far Fiordland, Stewart Island). "
+            "Genuinely popular / iconic places do NOT qualify even if the "
+            "prose uses 'hidden' loosely.\n\n"
+            "Consolidates four previously-separate tags as of 2026-06-24 — "
+            "'Hidden Gems', 'Off The Beaten Track', 'Quiet Spots', and "
+            "'Remote Locations'. Sanity may still carry the other three tag "
+            "documents (until they're explicitly retired) but our LLM "
+            "re-tag pass will only ever propose 'Hidden Gems'. If Douglas "
+            "reverses this consolidation later, see "
+            "directives/tag_consolidations_2026-06-24.md for the original "
+            "individual definitions and how to restore them."
         ),
         "positive_keywords": [
+            # framing-led (original Hidden Gems)
             r"\bhidden gem\b",
             r"\bhidden\b",
-            r"\boff the beaten\b",
-            r"\blesser[- ]?known\b",
             r"\boverlooked\b",
             r"\bundiscovered\b",
             r"\bsecret spot\b",
             r"\blocal[s']? secret\b",
             r"\bnot many people\b",
             r"\bunderrated\b",
+            r"\blesser[- ]?known\b",
+            # distance-led (original Off The Beaten Track)
+            r"\boff the beaten track\b",
+            r"\boff the beaten path\b",
+            r"\bless visited\b",
+            r"\bfewer people\b",
+            r"\bremote feel\b",
+            r"\bget away from\b",
+            r"\bquieter alternative\b",
+            r"\bend of the road\b",
+            # atmosphere-led (original Quiet Spots)
+            r"\bquiet\b",
+            r"\bpeaceful\b",
+            r"\bsecluded\b",
+            r"\btranquil\b",
+            r"\brestful\b",
+            r"\bcalm\b",
+            r"\bgentle\b",
+            r"\bunwind\b",
+            # isolation-led (original Remote Locations)
+            r"\bremote\b",
+            r"\bisolated\b",
+            r"\bfar from\b",
+            r"\bdistant\b",
+            r"\bmiles from\b",
+            r"\bno (?:cell )?signal\b",
+            r"\bwilderness\b",
+            r"\blast outpost\b",
         ],
         "negative_signals": [
             "famous",
             "popular",
             "well known",
             "iconic",
+            "tourist hot spot",
+            "crowded",
+            "busy",
         ],
     },
     {
@@ -1414,28 +1455,11 @@ TAG_DEFINITIONS: list[dict] = [
         ],
         "negative_signals": [],
     },
-    {
-        "name": "Off The Beaten Track",
-        "definition": (
-            "Out-of-the-way places with low visitor numbers and limited "
-            "facilities — distant ends of gravel roads, walk-in-only locations "
-            "without major signage. Overlaps with 'Hidden Gems' (which is "
-            "framing-focused) and 'Remote Locations' (which emphasises sheer "
-            "distance). This tag is for places that are quietly known but not "
-            "promoted."
-        ),
-        "positive_keywords": [
-            r"\boff the beaten track\b",
-            r"\boff the beaten path\b",
-            r"\bless visited\b",
-            r"\bfewer people\b",
-            r"\bremote feel\b",
-            r"\bget away from\b",
-            r"\bquieter alternative\b",
-            r"\bend of the road\b",
-        ],
-        "negative_signals": [],
-    },
+    # 'Off The Beaten Track' definition consolidated into 'Hidden Gems'
+    # umbrella tag (2026-06-24). LLM re-tag will not propose this tag; the
+    # Sanity tag document may still exist. See directives/
+    # tag_consolidations_2026-06-24.md for the original definition + how to
+    # restore if Douglas reverses the call.
     {
         "name": "Photography Spots",
         "definition": (
@@ -1501,32 +1525,8 @@ TAG_DEFINITIONS: list[dict] = [
             "indoor gallery",
         ],
     },
-    {
-        "name": "Quiet Spots",
-        "definition": (
-            "Peaceful, low-traffic places suited to slow visits — secluded "
-            "bays, restful gardens, sheltered picnic spots, places explicitly "
-            "framed as tranquil. Overlaps with 'Off The Beaten Track' but is "
-            "more about atmosphere than distance."
-        ),
-        "positive_keywords": [
-            r"\bquiet\b",
-            r"\bpeaceful\b",
-            r"\bsecluded\b",
-            r"\btranquil\b",
-            r"\brestful\b",
-            r"\bcalm\b",
-            r"\bgentle\b",
-            r"\bunwind\b",
-            r"\bget away\b",
-        ],
-        "negative_signals": [
-            "busy",
-            "popular",
-            "crowded",
-            "tourist hot spot",
-        ],
-    },
+    # 'Quiet Spots' definition consolidated into 'Hidden Gems' umbrella tag
+    # (2026-06-24). See directives/tag_consolidations_2026-06-24.md.
     {
         "name": "Rainforest",
         "definition": (
@@ -1574,31 +1574,8 @@ TAG_DEFINITIONS: list[dict] = [
             "town park",
         ],
     },
-    {
-        "name": "Remote Locations",
-        "definition": (
-            "Genuinely remote places — substantial travel to reach, limited "
-            "or no cell signal, no resident services nearby. East Cape, "
-            "Catlins ends, Fiordland approaches, Hokitika south, Stewart "
-            "Island. Different from 'Off The Beaten Track' (which is about "
-            "low visibility) and 'Hidden Gems' (framing)."
-        ),
-        "positive_keywords": [
-            r"\bremote\b",
-            r"\bisolated\b",
-            r"\bfar from\b",
-            r"\bdistant\b",
-            r"\bmiles from\b",
-            r"\bno (?:cell )?signal\b",
-            r"\bend of the road\b",
-            r"\blast outpost\b",
-            r"\bwilderness\b",
-        ],
-        "negative_signals": [
-            "close to town",
-            "popular",
-        ],
-    },
+    # 'Remote Locations' definition consolidated into 'Hidden Gems' umbrella
+    # tag (2026-06-24). See directives/tag_consolidations_2026-06-24.md.
     {
         "name": "Remote Road",
         "definition": (
